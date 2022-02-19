@@ -12,6 +12,50 @@ email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 identifier_regex = "^[a-zA-Z0-9\-.]+$"
 hash_regex = "^[A-Z0-9]*$"
 
+def get_first_application_hash() -> None:
+    command = ["security", "find-identity", "-p", "basic", "-v"]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+    output, error = process.communicate()
+    if not error: 
+        lines = output.splitlines()
+        for line in lines:
+            if "Developer ID Application" in str(line):
+                h = line.split()[1]
+                return (h).decode()
+    else:
+        logger.debug(f"an error occurred: {error}")
+
+def get_first_installer_hash() -> None:
+    command = ["security", "find-identity", "-p", "basic", "-v"]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+    output, error = process.communicate()
+    if not error: 
+        lines = output.splitlines()
+        for line in lines:
+            if "Developer ID Installer" in str(line):
+                h = line.split()[1]
+                return (h).decode()
+
+def list_signing_hashes() -> None:
+    """lists signing hashes to console by calling 'security find-identity -p basic -v'
+    """
+    command = ["security", "find-identity", "-p", "basic", "-v"]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+    output, error = process.communicate()
+    if not error: 
+        lines = output.splitlines()
+        for line in lines:
+            if "Developer ID Application" in str(line):
+                h = line.split()[1]
+                logger.info(f"valid 'developer_id_application_hash' hash found: {(h).decode()}")
+            if "Developer ID Installer" in str(line):
+                h = line.split()[1]
+                logger.info(f"valid 'developer_id_installer_hash' hash found: {(h).decode()}")
+    else:
+        logger.debug(f"an error occurred: {error}")
+
+
+
 def make_spec(app_name:str, app_bundle_identifier:str, main_python_file:str, spec_path:str) -> str:
     """creates a .spec file that is confirmed to work with code-signing
 
@@ -38,7 +82,10 @@ def make_spec(app_name:str, app_bundle_identifier:str, main_python_file:str, spe
     process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
     output, error = process.communicate()
     if not error:
-        return os.path.abspath(os.path.join(spec_path, name+".spec"))
+        logger.debug(f"spec_path:{location}")
+        logger.debug(f"name:{name}")
+        logger.info(f"wrote spec file to '{os.path.join(location, name+'.spec')}'")
+        return os.path.abspath(os.path.join(location, name+".spec"))
 
 def make_default_entitlements(path:str=None) -> str:
     """create the minimum entitlements.plist file for PyInstaller-bundled applications.
@@ -88,10 +135,10 @@ class Builder():
         if not os.path.exists(self.entitlements) or self.entitlements[-6:]!=".plist":
             logger.warning(f"unable to find valid entitlements file at '{self.spec_file}'")
             errors = True
-        if re.match(hash_regex, self.developer_id_application_hash):
+        if not re.match(hash_regex, self.developer_id_application_hash):
             logger.warning(f"improper developer_id_application hash detected: '{self.developer_id_application_hash}'")
             errors=True
-        if re.match(hash_regex, self.developer_id_installer_hash):
+        if not re.match(hash_regex, self.developer_id_installer_hash):
             logger.warning(f"improper developer_id_installer hash detected: '{self.developer_id_installer_hash}'")
             errors=True
         if not errors:
