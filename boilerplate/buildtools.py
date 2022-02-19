@@ -164,56 +164,6 @@ class Builder():
                 return True
         else:
             logger.error(f"unable to find .app file at '{path}'")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class Bundler():
-    """Bundler is responsible for creating the .app file.
-    """
-    def __init__(self) -> None:
-        pass
-
-class Packager():
-    """Packager is responsible for creating the .pkg file.
-    """
-    pass
-
-class Signer(Builder):
-    """Signer 
-    """
-    def sign_app(self, app_file, developer_id_hash, entitlements='./entitlements.plist') -> None:
-        """sign an app file at a specified path using a given developer-id-hash (application). Specify the entitlements file.
-
-        :param app_file: filepath to your .app file (i.e. ./dist/APPNAME.app)
-        :type app_file: str
-        :param developer_id_hash: hash of Developer ID Application
-        :type developer_id_hash: str
-        :param entitlements: entitlements file (use boilerplate.buildtools.make_default_entitlements() to build one), defaults to './entitlements.plist'
-        :type entitlements: str, optional
-        """
-        command = f'codesign --deep --force --timestamp --options runtime --entitlements {entitlements} --sign "{developer_id_hash}" "{app_file_path}"'
-        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE, cwd=os.getcwd())
-        output, error = process.communicate()
-
-class NotaryAgent():
-    """NotaryAgent is responsible for handling notorization and stapling.
-    """
-    pass
-
-        
-
     
+    def build_pkg(self) -> bool:
+        pass
