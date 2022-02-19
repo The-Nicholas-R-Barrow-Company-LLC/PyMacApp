@@ -1,27 +1,34 @@
-import setuptools
+import pathlib
+from setuptools import setup
 
-with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+# The directory containing this file
+HERE = pathlib.Path(__file__).parent
 
-setuptools.setup(
+# The text of the README file
+README = (HERE / "README.md").read_text()
+
+# This call to setup() does all the work
+setup(
     name="PyMacApp",
-    version="0.0.2",
-    author="The Nicholas R. Barrow Company, LLC",
-    author_email="me@nicholasrbarrow.com",
-    description="A boilerplate for creating MacOS desktop apps and installers, including signing and notorizing.",
-    long_description=long_description,
+    version="0.0.4",
+    description="Basic Tools to Build, Package, Sign, and Notorize Python Apps for MacOS",
+    long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp",
-    project_urls={
-        "Bug Tracker": "https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp/issues",
-    },
+    author="The Nicholas R. Barrow Company, LLC",
+    author_email="me@nicholasrbarrow.com",
+    license="MIT",
     classifiers=[
-        "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
     ],
-    package_dir={"": "boilerplate"},
-    packages=setuptools.find_packages(where="boilerplate"),
-    python_requires=">=3.9",
-    install_requires=["PyInstaller"]
+    packages=["pymacapp"],
+    include_package_data=True,
+    install_requires=["PyInstaller"],
+    # entry_points={
+    #     "console_scripts": [
+    #         "realpython=reader.__main__:main",
+    #     ]
+    # },
 )

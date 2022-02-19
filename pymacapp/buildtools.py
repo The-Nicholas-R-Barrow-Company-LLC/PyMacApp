@@ -10,7 +10,7 @@ logger.addHandler(streamHandler)
 
 email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 identifier_regex = "^[a-zA-Z0-9\-.]+$"
-hash_regex = "[^A-Z0-9]+"
+hash_regex = "^[A-Z0-9]*$"
 
 def make_spec(app_name:str, app_bundle_identifier:str, main_python_file:str, spec_path:str) -> str:
     """creates a .spec file that is confirmed to work with code-signing
@@ -66,7 +66,6 @@ def make_default_entitlements(path:str=None) -> str:
 
 
 class Builder():
-
     def validate(self) -> bool:
         """validate the Builder based on current variables; logs warnings if any detected.
 
@@ -164,6 +163,36 @@ class Builder():
                 return True
         else:
             logger.error(f"unable to find .app file at '{path}'")
+
+class Packager():
+    def __init__(self, package_identifier:str, developer_id_installer_hash:str=None) -> None:
+        self.package_identifier = package_identifier
+        if developer_id_installer_hash != None:
+            self.developer_id_installer_hash = developer_id_installer_hash
     
-    def build_pkg(self) -> bool:
-        pass
+    @property
+    def builder(self, _builder:Builder) -> None:
+        # set all of the init optional properties on each setting of builder
+        self._builder = _builder
+
+    @builder.getter
+    def builder(self) -> Builder:
+        return self._builder
+
+    def inherit_from_builder(self, builder:Builder) -> None:
+        self.builder = builder
+        self.developer_id_installer_hash = builder.developer_id_installer_hash
+
+    def build_pkg(self, version:str, uses_scripts:bool=False, scripts_directory:str=None) -> bool:
+        command = ["pkgbuild", 
+        "--identifier", f"{self.package_identifier}", 
+        "--sign", f"{self.developer_id_installer_hash}", 
+        "--version", version,
+        "--root", "$APP_PATH",
+        "--install-location", '/Applications/"$APP_NAME".app']
+        # scripts directory must end in "Scripts/" and contain preinstall and postinstall
+        # both scripts must be executable -> I NEED TO CODE THIS CHECK FEATURE
+        if uses_scripts:
+            command.append("--scripts")
+            command.append("$SCRIPTS")
+        command.append("$TMP_PKG_PATH")
