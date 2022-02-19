@@ -1,5 +1,5 @@
 # PyMacApp
-pip3 install PyMacApp
+```pip3 install PyMacApp```
 
 ## Currently supports
 - Building .app files
