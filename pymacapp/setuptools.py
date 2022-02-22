@@ -1,6 +1,7 @@
-import re, warnings, os
+import re, os
 from .buildtools import make_spec
 from .errors import ConfigAttributeError, ConfigEmptyValueError
+from .logger import logger
 
 email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 identifier_regex = "^[a-zA-Z0-9\-.]+$"
@@ -67,7 +68,8 @@ class BuildConfig(BasicConfig):
             path = os.path.join(os.getcwd(),"build.spec")
             if os.path.exists(os.path.join(os.getcwd(), "build.spec")):
                 self.__spec = path
-                warnings.warn(f"'{path}' exists, file will be used; delete this file if you want to re-generate it, no changes have been made")
+                logger.warning(f"'{path}' exists, file will be used; delete this file if you want to re-generate it, no changes have been made")
+                # warnings.warn(f"'{path}' exists, file will be used; delete this file if you want to re-generate it, no changes have been made")
             else:
                 # NOTE: need to fix my make_spec function so that I can specify the name of the spec file
                 v = make_spec(self.name, self.app_identifier, self.entry, os.getcwd(), "build.spec")
@@ -86,9 +88,11 @@ class BuildConfig(BasicConfig):
     def app_identifier(self, value) -> None:
         try:
             if not re.search(identifier_regex, value):
-                warnings.warn(f"invalid identifier detected (only letters, '.', and '-'): '{value}'")
+                # warnings.warn(f"invalid identifier detected (only letters, '.', and '-'): '{value}'")
+                logger.warning(f"invalid identifier detected (only letters, '.', and '-'): '{value}'")
         except:
-            warnings.warn(f"unable to validate: app_identifier")
+            # warnings.warn(f"unable to validate: app_identifier")
+            logger.warning(f"unable to validate: app_identifier")
         self.__app_identifier = value
     @app_identifier.deleter
     def app_identifier(self) -> None:

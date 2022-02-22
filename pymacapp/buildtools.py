@@ -1,12 +1,6 @@
-import subprocess, os, logging, traceback, re, time
+import subprocess, os, traceback, re, time
 from .defaultscripts import entitlements as entitlements_file
-
-logger = logging.Logger(__name__)
-formatter = logging.Formatter("[pymacapp] (%(asctime)s) %(name)s @ %(lineno)d [%(levelname)s]: %(message)s")
-streamHandler = logging.StreamHandler()
-streamHandler.setLevel(logging.DEBUG)
-streamHandler.setFormatter(formatter)
-logger.addHandler(streamHandler)
+from .logger import logger
 
 email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 identifier_regex = "^[a-zA-Z0-9\-.]+$"
