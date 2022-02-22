@@ -2,7 +2,7 @@ import subprocess, os, logging, traceback, re, time
 from .defaultscripts import entitlements as entitlements_file
 
 logger = logging.Logger(__name__)
-formatter = logging.Formatter("[BOILERPLATE] (%(asctime)s) %(name)s @ %(lineno)d [%(levelname)s]: %(message)s")
+formatter = logging.Formatter("[pymacapp] (%(asctime)s) %(name)s @ %(lineno)d [%(levelname)s]: %(message)s")
 streamHandler = logging.StreamHandler()
 streamHandler.setLevel(logging.DEBUG)
 streamHandler.setFormatter(formatter)
@@ -56,7 +56,7 @@ def list_signing_hashes() -> None:
 
 
 
-def make_spec(app_name:str, app_bundle_identifier:str, main_python_file:str, spec_path:str) -> str:
+def make_spec(app_name:str, app_bundle_identifier:str, main_python_file:str, spec_path:str, file_name:str) -> str:
     """creates a .spec file that is confirmed to work with code-signing
 
     :param app_name: the name of your app (will output as app_name.app once built)
@@ -74,6 +74,10 @@ def make_spec(app_name:str, app_bundle_identifier:str, main_python_file:str, spe
         name = app_name[:-4]
     else:
         name = app_name
+    if file_name:
+        name = file_name
+    if name[-5:] == ".spec":
+        name = name[:-5]
     if spec_path==None:
         location = os.getcwd()
     else:
@@ -120,42 +124,62 @@ class Builder():
         :rtype: bool
         """
         errors = False
-        if not os.path.exists(self.main_file) or self.main_file[-3:]!=".py":
-            logger.warning(f"unable to find python file at '{self.main_file}'")
-            errors = True
-        if not re.fullmatch(email_regex, self.apple_developer_email):
-            logger.warning(f"invalid email detected: '{self.apple_developer_email}'")
-            errors = True
-        if not re.search(identifier_regex, self.app_bundle_identifier):
-            logger.warning(f"invalid app-bundle-identifier detected (only letters, '.', and '-'): '{self.app_bundle_identifier}'")
-            errors = True
-        if not os.path.exists(self.spec_file) or self.spec_file[-5:]!=".spec":
-            logger.warning(f"unable to find valid spec file at '{self.spec_file}'")
-            errors = True
-        if not os.path.exists(self.entitlements) or self.entitlements[-6:]!=".plist":
-            logger.warning(f"unable to find valid entitlements file at '{self.spec_file}'")
-            errors = True
-        if not re.match(hash_regex, self.developer_id_application_hash):
-            logger.warning(f"improper developer_id_application hash detected: '{self.developer_id_application_hash}'")
+        try:
+            if not os.path.exists(self.main_file) or self.main_file[-3:]!=".py":
+                logger.warning(f"unable to find python file at '{self.main_file}'")
+                errors = True
+        except:
+            logger.warning(f"unable to validate: main_file")
             errors=True
-        if not re.match(hash_regex, self.developer_id_installer_hash):
-            logger.warning(f"improper developer_id_installer hash detected: '{self.developer_id_installer_hash}'")
+        try:
+            if not re.search(identifier_regex, self.app_bundle_identifier):
+                logger.warning(f"invalid app-bundle-identifier detected (only letters, '.', and '-'): '{self.app_bundle_identifier}'")
+                errors = True
+        except:
+            logger.warning(f"unable to validate: app_bundle_identifier")
+            errors=True
+        try:
+            if not os.path.exists(self.spec_file) or self.spec_file[-5:]!=".spec":
+                logger.warning(f"unable to find valid spec file at '{self.spec_file}'")
+                errors = True
+        except:
+            logger.warning(f"unable to validate: spec_file")
+            errors=True
+        try:
+            if not os.path.exists(self.entitlements) or self.entitlements[-6:]!=".plist":
+                logger.warning(f"unable to find valid entitlements file at '{self.spec_file}'")
+                errors = True
+        except:
+            logger.warning(f"unable to validate: entitlements")
+            errors=True
+        try:
+            if not re.match(hash_regex, self.developer_id_application_hash):
+                logger.warning(f"improper developer_id_application hash detected: '{self.developer_id_application_hash}'")
+                errors=True
+        except:
+            logger.warning(f"unable to validate: developer_id_application_hash")
             errors=True
         if not errors:
             logger.info(f"no warnings detected for {self}!")
+        else:
+            logger.warning(f"errors detected during validation; surpress this message with validate=False")
         return not errors
 
-    def __init__(self, main_file:str, app_name:str, app_bundle_identifier:str, apple_developer_email:str, 
-                 developer_id_application_hash:str, developer_id_installer_hash:str, spec_file:str=None, 
-                 create_spec_file_at:str=None, entitlements_file:str=None, 
-                 create_entitlements_file_at:str=None) -> None:
+    def __init__(self, 
+                main_file:str, 
+                app_name:str, 
+                app_bundle_identifier:str=None, 
+                developer_id_application_hash:str=None,  
+                spec_file:str=None, 
+                create_spec_file_at:str=None, 
+                entitlements_file:str=None, 
+                create_entitlements_file_at:str=None,
+                validate:bool=True) -> None:
         super().__init__()
         self.main_file = main_file
         self.app_name = app_name
-        self.apple_developer_email = apple_developer_email
         self.app_bundle_identifier = app_bundle_identifier
         self.developer_id_application_hash = developer_id_application_hash
-        self.developer_id_installer_hash = developer_id_installer_hash
         if spec_file==None:
             self.spec_file = make_spec(self.app_name, self.app_bundle_identifier, self.main_file, create_spec_file_at)
         else:
@@ -164,9 +188,12 @@ class Builder():
             self.entitlements = make_default_entitlements(create_entitlements_file_at)
         else:
             self.entitlements = entitlements_file
-        self.validate()
+        if validate:
+            self.validate()
+        else:
+            logger.debug("validation is disabled")
 
-    def build_app(self, no_confirm=True) -> bool:
+    def build_app(self, no_confirm=True, validate=True) -> bool:
         """build .app file
 
         :param no_confirm: whether or not to replace existing build and dist directories; if you chnage to False, please note that the build will fail if these directories are not empty, defaults to True
@@ -174,10 +201,13 @@ class Builder():
         :return: whether or not the build completed without most errors (pyinstaller errors are not caught)
         :rtype: bool
         """
-        if not self.validate():
-            cont = input("warning detected! continue (y/n): ")
-            if cont != "y":
-                return
+        if validate:
+            if not self.validate():
+                cont = input("warning detected! continue (y/n): ")
+                if cont != "y":
+                    return
+        else:
+            logger.debug("validation is disabled")
         start = time.time()
         command = ["pyinstaller", f"{self.spec_file}"]
         if no_confirm:
@@ -193,7 +223,12 @@ class Builder():
             logger.info(f"build completed ({t} seconds)")
             return True
     
-    def sign_app(self) -> None:
+    def sign_app(self) -> bool:
+        """signs a .app file
+
+        :return: if the .app successfully signed
+        :rtype: bool
+        """
         path = os.path.join(os.getcwd(), "dist", f"{self.app_name}.app")
         if(os.path.exists(path)):
             start = time.time()
@@ -212,31 +247,65 @@ class Builder():
             logger.error(f"unable to find .app file at '{path}'")
 
 class Packager():
-    def __init__(self, package_identifier:str, developer_id_installer_hash:str=None) -> None:
+
+    def validate(self) -> bool:
+        """validate the Packager based on current variables; logs warnings if any detected.
+
+        :return: returns True if no warnings, returns False if warnings detected
+        :rtype: bool
+        """
+        errors = False
+        try:
+            pass
+        except:
+            pass
+        if not errors:
+            logger.info(f"no warnings detected for {self}!")
+        else:
+            logger.warning(f"errors detected during validation; surpress this message with validate=False")
+        return not errors
+
+    def __init__(self, 
+                package_identifier:str, 
+                version:str,
+                developer_id_installer_hash:str, 
+                use_scripts:bool=False,
+                scripts_path:str=None,
+                builder:Builder=None, 
+                app_name:str=None,
+                app_path:str=None,
+                install_directory:str="/Applications/"
+                ) -> None:
         self.package_identifier = package_identifier
-        if developer_id_installer_hash != None:
-            self.developer_id_installer_hash = developer_id_installer_hash
-    
-    @property
-    def builder(self, _builder:Builder) -> None:
-        # set all of the init optional properties on each setting of builder
-        self._builder = _builder
-
-    @builder.getter
-    def builder(self) -> Builder:
-        return self._builder
-
-    def inherit_from_builder(self, builder:Builder) -> None:
-        self.builder = builder
-        self.developer_id_installer_hash = builder.developer_id_installer_hash
+        self.version = version
+        self.developer_id_installer_hash = developer_id_installer_hash
+        if use_scripts:
+            if os.path.exists(scripts_path):
+                self.scripts = scripts_path
+            else:
+                logger.error(f"unable to find scripts_path '{scripts_path}'; scripts will be ignored")
+        if builder:
+            if app_name or app_path:
+                logger.warning(f"since 'builder' is provided, app_name and app_path are ignored")
+            self.app_name = builder.app_name
+            self.app_path = os.path.join(os.getcwd(), "dist", f"{self.app_name}.app")
+        elif app_name and app_path:
+            if app_name[-4:] == ".app":
+                self.app_name = app_name[:-4]
+            else:
+                self.app_name = app_name
+                self.app_path = os.path.join(os.getcwd(), "dist", f"{self.app_name}.app")
+        else:
+            logger.warning(f"must specify either (1) builder or (2) app_name and app_path")
 
     def build_pkg(self, version:str, uses_scripts:bool=False, scripts_directory:str=None) -> bool:
         command = ["pkgbuild", 
-        "--identifier", f"{self.package_identifier}", 
-        "--sign", f"{self.developer_id_installer_hash}", 
-        "--version", version,
-        "--root", "$APP_PATH",
-        "--install-location", '/Applications/"$APP_NAME".app']
+                    "--identifier", f"{self.package_identifier}", 
+                    "--sign", f"{self.developer_id_installer_hash}", 
+                    "--version", version,
+                    "--root", "$APP_PATH",
+                    "--install-location", '/Applications/"$APP_NAME".app',
+                    "TMP"]
         # scripts directory must end in "Scripts/" and contain preinstall and postinstall
         # both scripts must be executable -> I NEED TO CODE THIS CHECK FEATURE
         if uses_scripts:
