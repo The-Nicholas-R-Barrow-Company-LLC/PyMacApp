@@ -1,34 +1,30 @@
-import os
-from tkinter import Pack
-from .buildtools import Builder as Builder
-from .buildtools import Packager as Packager
+from .buildtools import Stapler, NotaryAgent
+from .logger import logger
 
 class AppFactory():
-    def init_builder():
-        pass
-    def init_packager():
-        pass
-    def init_notary_agent():
+    def __init__(self) -> None:
+        logger.info(f"AppFactory initialized: {self}")
+
+    def setup(self, bundler, packager, notary_agent:NotaryAgent, stapler:Stapler) -> None:
+        logger.debug(f"setting-up {self}: {bundler=}, {packager=}, {notary_agent=}, {stapler=}")
+        self.attach_bundler(bundler)
+        self.attach_packager(packager)
+        self.attach_notary_agent(notary_agent)
+        self.attach_stapler(stapler)
+        logger.debug(f"setup complete ({self})")
+
+    def attach_bundler(self):
         pass
 
-def make_config_file() -> None:
-    with open(os.path.join(os.getcwd(), "boilerplate.cfg"), "w") as f:
-        f.writelines("""
-app_name=
-app_bundle_identifier=
-apple_developer_email=
-developer_id_application_hash=
-developer_id_installer_hash=
-spec_file=None
-create_spec_file_at=None
-entitlements_file=None
-create_entitlements_file_at=None
-""")
+    def attach_packager(self):
+        pass
 
-# def BuildDefaultApp():
-#     # do everything to create a blank app, including an app.py file
-#     pass 
+    def attach_notary_agent(self, notary_agent:NotaryAgent) -> NotaryAgent:
+        self.notary_agent = notary_agent
+        logger.debug(f"{notary_agent} attached to {self}")
+        return self.notary_agent
 
-# class AppFactory(Builder, Packager):
-#     def __init__(self, main_file: str, app_name: str, app_bundle_identifier: str, apple_developer_email: str, developer_id_application_hash: str, developer_id_installer_hash: str, spec_file: str = None, create_spec_file_at: str = None, entitlements_file: str = None, create_entitlements_file_at: str = None) -> None:
-#         super().__init__(main_file, app_name, app_bundle_identifier, apple_developer_email, developer_id_application_hash, developer_id_installer_hash, spec_file, create_spec_file_at, entitlements_file, create_entitlements_file_at)
+    def attach_stapler(self, stapler:Stapler) -> Stapler:
+        self.stapler = stapler
+        logger.debug(f"{stapler} attached to {self}")
+        return self.stapler

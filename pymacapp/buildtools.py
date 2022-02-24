@@ -1,10 +1,27 @@
 import subprocess, os, traceback, re, time
 from .defaultscripts import entitlements as entitlements_file
 from .logger import logger
+from .setuptools import BuildConfig, PackageConfig, make_spec
+import warnings
+import functools
 
 email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 identifier_regex = "^[a-zA-Z0-9\-.]+$"
 hash_regex = "^[A-Z0-9]*$"
+
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emitted
+    when the function is used."""
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+        warnings.warn("Call to deprecated function {}.".format(func.__name__),
+                      category=DeprecationWarning,
+                      stacklevel=2)
+        warnings.simplefilter('default', DeprecationWarning)  # reset filter
+        return func(*args, **kwargs)
+    return new_func
 
 def get_first_application_hash() -> None:
     command = ["security", "find-identity", "-p", "basic", "-v"]
@@ -50,41 +67,6 @@ def list_signing_hashes() -> None:
 
 
 
-def make_spec(app_name:str, app_bundle_identifier:str, main_python_file:str, spec_path:str, file_name:str) -> str:
-    """creates a .spec file that is confirmed to work with code-signing
-
-    :param app_name: the name of your app (will output as app_name.app once built)
-    :type app_name: str
-    :param app_bundle_identifier: identifier registered on https://developer.apple.com
-    :type app_bundle_identifier: str
-    :param main_python_file: the entry python script, such as app.py or main.py
-    :type main_python_file: str
-    :param spec_path: where to put the .spec file; if None, uses current working directory, defaults to None
-    :type spec_path: str
-    :return: if succeessful, the full path to the .spec file
-    :rtype: str
-    """
-    if app_name[-4:] == ".app":
-        name = app_name[:-4]
-    else:
-        name = app_name
-    if file_name:
-        name = file_name
-    if name[-5:] == ".spec":
-        name = name[:-5]
-    if spec_path==None:
-        location = os.getcwd()
-    else:
-        location = spec_path
-    command = ["pyi-makespec", f"{main_python_file}", '--name', f'{name}', "--windowed", "--specpath", f'{location}', "--osx-bundle-identifier", f'{app_bundle_identifier}']
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
-    output, error = process.communicate()
-    if not error:
-        logger.debug(f"spec_path:{location}")
-        logger.debug(f"name:{name}")
-        logger.info(f"wrote spec file to '{os.path.join(location, name+'.spec')}'")
-        return os.path.abspath(os.path.join(location, name+".spec"))
-
 def make_default_entitlements(path:str=None) -> str:
     """create the minimum entitlements.plist file for PyInstaller-bundled applications.
 
@@ -109,7 +91,7 @@ def make_default_entitlements(path:str=None) -> str:
         logger.info(f"wrote entitlements file to '{location}'")
         return location
 
-
+@deprecated
 class Builder():
     def validate(self) -> bool:
         """validate the Builder based on current variables; logs warnings if any detected.
@@ -240,6 +222,18 @@ class Builder():
         else:
             logger.error(f"unable to find .app file at '{path}'")
 
+class Bundler():
+    def __init__(self, config:BuildConfig) -> None:
+        self.config = config
+        logger.info(f"Bundler created: {self}")
+    
+    def build(self) -> None:
+        logger.info(f"{self}.build() method initialized")
+
+    def sign(self) -> None:
+        logger.info(f"{self}.sign() method initialized")
+
+@deprecated
 class Packager():
 
     def validate(self) -> bool:
@@ -306,3 +300,32 @@ class Packager():
             command.append("--scripts")
             command.append("$SCRIPTS")
         command.append("$TMP_PKG_PATH")
+
+class NotaryAgent():
+    def __init__(self) -> None:
+        pass
+
+class Stapler():
+    def __init__(self, config:PackageConfig) -> None:
+        self.config = config
+        logger.info(f"Stapler created: {self}")
+
+    def staple(self):
+        logger.info(f"{self}.staple() method initialized")
+        command = ["xcrun", "stapler", "staple", self.config.signed_package_directory]
+        debug_command = " ".join(command)
+        logger.debug(f"staple command to execute with bash: '{debug_command}'")
+        logger.debug(f"attempting to execute staple command with bash")
+        try:
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+            output, error = process.communicate()
+        except Exception as e:
+            logger.error(f"unable to execute bash command on {self}.staple(): {e}")
+        else:
+            if error:
+                logger.error(f"{self}.staple() encountered an error during the staple process: {error}")
+            if output:
+                logger.debug(f"output from {self}.staple(): \n{output}")
+        finally:
+            logger.info(f"exiting {self}.staple()")
+    
