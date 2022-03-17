@@ -1,6 +1,7 @@
 import re, os, subprocess
 from .errors import ConfigAttributeError, ConfigEmptyValueError
 from .logger import logger
+from .models import App
 
 email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 identifier_regex = "^[a-zA-Z0-9\-.]+$"
@@ -43,36 +44,34 @@ def make_spec(app_name:str, app_bundle_identifier:str, main_python_file:str, spe
         return os.path.abspath(os.path.join(location, name+".spec"))
 
 
-class BasicConfig():
-    def __init__(self, name:str) -> None:
-        self.__name:str = name
-    @property
-    def name(self) -> str:
-        return self.__name
-    @name.setter
-    def name(self, value) -> None:
-        if value == None or value == "":
+class BaseConfig:
+    def __init__(self, app:App=None, app_name:str=None) -> None:
+        if not app and not app_name:
+            logger.error("must pass either app or app_name to Config")
+        elif app:
+            self.__name = app.name
+        if app_name == None or app_name == "":
             raise ConfigEmptyValueError
-        elif value[-4:] == ".app":
+        elif app_name[-4:] == ".app":
             logger.warning(f"{self}.name should not end in '.app'; the '.app' extension will be ignored")
-            self.__name = value[:-4]
+            self.__name = app_name[:-4]
         else:
-            self.__name = value
-    @name.deleter
-    def name(self) -> None:
-        raise ConfigAttributeError("cannot delete attribute 'name'")
+            self.__name = app_name
 
-class BuildConfig(BasicConfig):
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
+class BuildConfig(BaseConfig):
+    def __init__(self, app: App = None, app_name: str = None) -> None:
+        super().__init__(app, app_name)
         self.__app_identifier:str = None
         self.__spec:str = None
         self.__entry:str = None
+        self.__source_directory:str = None
+        return None
     
-    def setup(self, entry:str, spec:str=None, identifier:str=None) -> None:
+    def setup(self, entry:str, spec:str=None, identifier:str=None):
         self.entry = entry
         self.spec = spec
         self.app_identifier = identifier
+        return self
     
     @property
     def entry(self) -> str:
@@ -82,6 +81,7 @@ class BuildConfig(BasicConfig):
         if os.path.exists(value):
             if value[-3:] == ".py":
                 self.__entry = value
+                self.__source_directory = os.path.dirname(value)
             else:
                 raise ConfigAttributeError(f"file '{value}' is not a .py file")
         else:
@@ -104,18 +104,18 @@ class BuildConfig(BasicConfig):
             else:
                 raise ConfigAttributeError(f"file '{value}' does not exist")
         else:
-            path = os.path.join(os.getcwd(),"build.spec")
-            if os.path.exists(os.path.join(os.getcwd(), "build.spec")):
+            path = os.path.join(self.__source_directory,"build.spec")
+            if os.path.exists(path):
                 self.__spec = path
                 logger.warning(f"'{path}' exists, file will be used; delete this file if you want to re-generate it, no changes have been made")
                 # warnings.warn(f"'{path}' exists, file will be used; delete this file if you want to re-generate it, no changes have been made")
             else:
                 # NOTE: need to fix my make_spec function so that I can specify the name of the spec file
-                v = make_spec(self.name, self.app_identifier, self.entry, os.getcwd(), "build.spec")
+                v = make_spec(self.name, self.app_identifier, self.entry, self.__source_directory, "build.spec")
                 if v:
                     self.__spec = v
                 else:
-                    raise RuntimeError(f"unable to create 'build.spec' file in '{os.getcwd()}'")
+                    raise RuntimeError(f"unable to create 'build.spec' file in '{self.__source_directory}'")
     @spec.deleter
     def spec(self) -> None:
         raise ConfigAttributeError("cannot delete attribute 'spec'")
@@ -137,7 +137,7 @@ class BuildConfig(BasicConfig):
     def app_identifier(self) -> None:
         del self.__app_identifier
 
-class PackageConfig(BasicConfig):
+class PackageConfig(BaseConfig):
     def __init__(self, name: str) -> None:
         """a config object for .pkg-related objects
 
@@ -161,55 +161,3 @@ class PackageConfig(BasicConfig):
             raise ConfigAttributeError(f"directory '{value}' is not an existing directory")
         else:
             self.__signed_package_directory = value
-
-
-# class Config():
-#     def __init__(self) -> None:
-#         # build app
-
-#         # pkg specific
-#         self.__install:str = None
-#         self.__version:str = None
-#         self.__scripts:str = None
-#         self.__tmp_location:str = None
-#         self.__signed_location:str = None
-#         self.__installer_hash:str = None
-
-#     def app(self, name:str, version:str=None, identifier:str=None) -> None:
-#         self.__name = name
-#         self.__version = version
-#         self.__app_identifier = identifier
-
-
-    
-#     @property
-#     def install(self) -> None:
-#         return self.__install
-#     @install.setter
-#     def install(self, value) -> None:
-#         if value == None or value == "":
-#             raise ConfigEmptyValueError
-#         elif value[-1:] != "/":
-#             raise ConfigAttributeError("install should be a parent directory (ending in '/') where you want your application to be installed.")
-#         else:
-#             self.__install = value
-#     @install.deleter
-#     def install(self) -> None:
-#         raise ConfigAttributeError("cannot delete attribute 'install'")
-
-#     @property
-#     def version(self) -> None:
-#         return self.__version
-#     @version.setter
-#     def version(self, value) -> None:
-#         self.__version = value
-#     @version.deleter
-#     def version(self) -> None:
-#         del self.__version
-    
-
-    
-    # def pkg(self)
-
-if __name__ == "__main__":
-    pass
