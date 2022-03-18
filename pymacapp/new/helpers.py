@@ -1,6 +1,42 @@
 import subprocess, os
 from .logger import logger
 
+MINIMUM_ENTITLEMENTS = os.path.join(os.path.dirname(__file__), "entitlements.plist")
+
+def get_first_application_hash() -> str:
+    """equivalent to running "security find-identity -p basic -v" in terminal and looking for the hash next to "Developer ID Application"
+
+    :return: the Developer ID Application hash
+    :rtype: str
+    """
+    command = ["security", "find-identity", "-p", "basic", "-v"]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+    output, error = process.communicate()
+    if not error: 
+        lines = output.splitlines()
+        for line in lines:
+            if "Developer ID Application" in str(line):
+                h = line.split()[1]
+                return (h).decode()
+    else:
+        logger.debug(f"an error occurred: {error}")
+
+def get_first_installer_hash() -> str:
+    """equivalent to running "security find-identity -p basic -v" in terminal and looking for the hash next to "Developer ID Installer"
+
+    :return: the Developer ID Installer hash
+    :rtype: str
+    """
+    command = ["security", "find-identity", "-p", "basic", "-v"]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+    output, error = process.communicate()
+    if not error: 
+        lines = output.splitlines()
+        for line in lines:
+            if "Developer ID Installer" in str(line):
+                h = line.split()[1]
+                return (h).decode()
+
 def make_spec(app_name:str, app_bundle_identifier:str, main_python_file:str, spec_path:str) -> str:
     """creates a .spec file that is confirmed to work with code-signing
 
