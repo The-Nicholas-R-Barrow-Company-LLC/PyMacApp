@@ -1,6 +1,6 @@
 from .logger import logger
 import subprocess, os, time, shutil
-from .helpers import make_spec, MINIMUM_ENTITLEMENTS, DEFAULT_SCRIPTS
+from .helpers import make_spec, MINIMUM_ENTITLEMENTS, DEFAULT_SCRIPTS, get_first_installer_hash
 
 class Package:
     def __init__(self, app, version:str="0.0.1", identifier:str=None) -> None:
@@ -15,7 +15,8 @@ class Package:
     def __repr__(self) -> str:
         return f"Package({self.app=})"
     
-    def build(self, preinstall_script:str=None, postinstall_script:str=None, dist_path:str=os.path.join(os.getcwd(), "dist-pkg"), build_path:str=os.path.join(os.getcwd(), "build-pkg"), app_path:str=None):
+    def build(self, output:str="installer.pkg", preinstall_script:str=None, postinstall_script:str=None, dist_path:str=os.path.join(os.getcwd(), "dist-pkg"), build_path:str=os.path.join(os.getcwd(), "build-pkg"), app_path:str=None):
+        logger.debug(type(output))
         start = time.time()
         logger.info(f"(pkg) build initiated")
         self.__build = build_path
@@ -52,7 +53,7 @@ class Package:
                 if os.path.basename(preinstall_script) == "preinstall":
                     PRE = preinstall_script
                 else:
-                    logger.error("the name of the preinstall script must be 'preinstall' exactly, without extension")
+                    logger.error(f"the name of the preinstall script must be 'preinstall' exactly, without extension (currently {preinstall_script=})")
             else:
                 logger.error(f"unable to verify '{preinstall_script=}'; it will be ignored")
         if postinstall_script:
@@ -71,11 +72,11 @@ class Package:
             if PRE:
                 # this is to preserve the default script
                 if PRE != os.path.join(os.path.dirname(__file__), "Scripts", "preinstall"):
-                    shutil.copyfile(PRE, os.path.join(os.path.dirname(__file__), "Scripts"))
+                    shutil.copyfile(PRE, os.path.join(os.path.dirname(__file__), "Scripts", "preinstall"))
             if POST:
                 # this is to preserve the default script
                 if POST != os.path.join(os.path.dirname(__file__), "Scripts", "postinstall"):
-                    shutil.copyfile(POST, os.path.join(os.path.dirname(__file__), "Scripts"))
+                    shutil.copyfile(POST, os.path.join(os.path.dirname(__file__), "Scripts", "postinstall"))
             logger.info(f"ensuring {scripts=} is executable (sudo chmod -R +x {scripts})")
             scripts_command = ["sudo", "chmod", "-R", "+x", scripts]
             try:
@@ -87,8 +88,28 @@ class Package:
                 logger.warning(f"unable to verify all scripts in '{scripts}' are executable")
         
         # 2: productbuild
-        # HASH = None
-        # build_command = ["pkgbuild", "--identifier", self.identifier, "--sign", HASH, "--version", version, "--root", ]
+        build_command = ["pkgbuild", "--root", self.app._app, "--install-location", f"/Applications/{self.app._name}.app", os.path.join(self.__build, f"{self.app._name}.pkg")]
+        if PRE or POST:
+            build_command.insert(1, DEFAULT_SCRIPTS)
+            build_command.insert(1, "--scripts")
+        if self.identifier:
+            build_command.insert(1, self.identifier)
+            build_command.insert(1, "--identifier")
+        if self.version:
+            build_command.insert(1, self.version)
+            build_command.insert(1, "--version")
+        if True:
+            build_command.insert(1, get_first_installer_hash())
+            build_command.insert(1, "--sign")
+        debug_command = ' '.join(build_command)
+        logger.debug(f"attempting pkgbuild command ({debug_command})")
+        try:
+            process = subprocess.Popen(build_command, stdout=subprocess.PIPE, cwd=os.getcwd())
+            output, error = process.communicate()
+            if error:
+                logger.warning(error)
+        except:
+            logger.error(f"unable to execute pkgbuild")
         # pkgbuild --identifier $PKG_IDENTIFIER \
         #  --sign "7C143CC5C54676696AFAA900D3DE34C07BC5C55F" \
         #  --version $APP_VERSION \
@@ -97,7 +118,16 @@ class Package:
         #  --install-location /Applications/"$APP_NAME".app "$TMP_PKG_PATH"
         return self
 
-    def sign(self):
+    def sign(self, hash:str):
+        command = ["productsign", "--sign", hash, os.path.join(self.__build, f"{self.app._name}.pkg"), os.path.join(self.__dist, f"{self.app._name}.pkg")]
+        logger.info("attempting to package sign")
+        try:
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+            output, error = process.communicate()
+            if error:
+                logger.warning(error)
+        except:
+            logger.error(f"unable to execute productsign")
         return self
     
     def notorize(self):

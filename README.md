@@ -6,6 +6,8 @@ This Repo creates a project that you can clone to streamline MacOS python deskto
 This currently supports (and has been tested on) Python 3.9.9 on MacOS 11.6. This tool may work on other systems, but has not been tested.
 - Building .app files
 - Signing .app files
+- Building .pkg files
+- Signing .pkg files
 
 ## ToDo
 - Building .pkg files
