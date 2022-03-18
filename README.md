@@ -68,3 +68,6 @@ Use the Builder() and then call the .build_app(), .sign_app() functions. More co
 # Advanced Customization
 ## Pre- and Post-Install Scripting
 Coming soon.
+
+# Project History
+This project began while performing work for Georgetown University's Department of Italian Studies. The code herein was needed to develop applications within the Department. Some of the code contains outside work, so this was a joint collaboration. 
