@@ -10,8 +10,8 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="PyMacApp",
-    version="0.2.0",
-    description="Basic Tools to Build, Package, Sign, and Notorize (coming soon) Python Apps for MacOS",
+    version="1.0.0",
+    description="Basic Tools to Build, Package, Sign, and Notorize Python Apps for MacOS",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp",
@@ -26,4 +26,9 @@ setup(
     packages=["pymacapp"],
     include_package_data=True,
     install_requires=["PyInstaller"],
+    project_urls={
+        'Source': 'https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp',
+        'Tracker': 'https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp/issues',
+    }
+        # 'Documentation': 'https://packaging.python.org/tutorials/distributing-packages/',
 )
