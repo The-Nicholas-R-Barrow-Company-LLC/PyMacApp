@@ -1,6 +1,12 @@
 from .logger import logger
 import os, subprocess, time
 from .helpers import make_spec, MINIMUM_ENTITLEMENTS
+from .entitlements import CONTENTS
+
+def check_entitlements():
+    if not os.path.exists(MINIMUM_ENTITLEMENTS):
+        with open(MINIMUM_ENTITLEMENTS, "w") as f:
+            f.writelines(CONTENTS)
 
 class App:
     def __init__(self, name:str, identifier:str=None) -> None:
@@ -18,6 +24,7 @@ class App:
         self._built = False
         self._signed = False
         logger.debug(f"{self} created")
+        check_entitlements()
 
     def __repr__(self) -> str:
         return f"App({self._name=})"
@@ -69,7 +76,8 @@ class App:
         :type entitlements: str, optional
         :return: self (current app)
         :rtype: App
-        """        
+        """   
+        check_entitlements()     
         APP = os.path.join(self._dist, f"{self._name}.app")
         self._app = APP
         __entitlements = ""
