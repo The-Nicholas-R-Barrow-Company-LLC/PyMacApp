@@ -3,8 +3,8 @@ from pymacapp.logger import set_level
 from pymacapp.helpers import get_first_application_hash, get_first_installer_hash
 import logging
 
-APPLE_DEVELOPER_ID_EMAIL = # fill this in
-APP_SPECIFIC_PASSWORD = # fill this in
+APPLE_DEVELOPER_ID_EMAIL = None # fill this in
+APP_SPECIFIC_PASSWORD = None # fill this in
 
 # set logging level for pymacapp's built-in logger
 set_level(logging.DEBUG)

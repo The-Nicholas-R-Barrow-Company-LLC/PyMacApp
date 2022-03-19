@@ -1,4 +1,7 @@
 #!/usr/local/bin/bash
+
+source ./.venv/bin/activate
+
 BUILD="./build/*"
 echo "[PUBLISH] cleaning $BUILD"
 rm -r $BUILD

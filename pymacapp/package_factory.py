@@ -13,6 +13,11 @@ class Package:
         self.__dist = None
         logger.debug(f"{self} created")
         logger.debug(self.app._app)
+        if not os.path.exists(DEFAULT_SCRIPTS):
+            try:
+                os.mkdir(DEFAULT_SCRIPTS)
+            except:
+                logger.warning(f"unable to make directory '{DEFAULT_SCRIPTS}'")
     
     def __repr__(self) -> str:
         return f"Package({self.app=})"
@@ -126,6 +131,10 @@ class Package:
         try:
             process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
             output, error = process.communicate()
+            if output:
+                out = output.decode("utf-8")
+                for line in out.splitlines():
+                    logger.info(line)
             if error:
                 logger.warning(error)
         except Exception as e:
@@ -148,6 +157,13 @@ class Package:
         self.login(apple_id=apple_id, app_specific_password=app_specific_password)
         try:
             command = ["xcrun", "altool", "--notarize-app", "--primary-bundle-id", self.identifier, f"--username={apple_id}", "--password", f"{app_specific_password}", "--file", os.path.join(self.__dist, f"{self.app._name}.pkg")]
+            debug_command = ""
+            for c in command:
+                if " " in c:
+                    debug_command = f"{debug_command} '{c}'"
+                else:
+                    debug_command = f"{debug_command} {c}"
+            logger.debug(f"signing with: {debug_command}")
             logger.info("attempting to notorize")
             try:
                 process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
@@ -206,8 +222,9 @@ class Package:
         except AttributeError:
             logger.error(f"self._request_uuid does not exist; call .notorize(...) first")
     
-    def get_full_notary_log(self):
-        pass
+    def get_full_notary_log(self, apple_id:str=None, app_specific_password:str=None):
+        self.login(apple_id=apple_id, app_specific_password=app_specific_password)
+        command = ["xcrun", "altool", "--username", self._apple_id, "--password", self._app_specific_password, "--notarization-info", self._request_uuid]
     
     def staple(self):
         logger.info("preparing to staple")
