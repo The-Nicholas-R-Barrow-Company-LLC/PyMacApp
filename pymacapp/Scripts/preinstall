@@ -1,6 +1,0 @@
-#!/bin/bash
-exit 0 ## if you do not exit 0, any non-0 exits will cause install to fail
-# ****** WARNING ******
-# This file is created by using the pymacapp.scripthelpers.DefaultPostinstallScript class.
-# Changes made in this file directly will automatically be overridden.
-# ****** WARNING ******

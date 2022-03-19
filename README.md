@@ -4,39 +4,24 @@
 This Repo creates a project that you can clone to streamline MacOS python desktop app development. It contains all necessary scripts to build your final project, as well as code-sign them from Apple (Developer Account required for some features).
 
 # Quickstart: Building & Packaging Your App
-```from pymacapp import App, Package
-from pymacapp.logger import set_level
+```
+from pymacapp import App, Package
 from pymacapp.helpers import get_first_application_hash, get_first_installer_hash
-import logging
 
-APPLE_DEVELOPER_ID_EMAIL = # fill this in
-APP_SPECIFIC_PASSWORD = # fill this in
+# Apple Account Information
+# You can get rid of the input(...) functions and instead enter the strings directly so you do not have to enter them each time.
+APPLE_DEVELOPER_ACCOUNT_EMAIL = input("Apple Developer ID Email (str): ")
+APPLE_DEVELOPER_ACCOUNT_APP_SPECIFIC_PASSWORD = input("Apple Developer ID App-Specific Password (str): ")
 
-# set logging level for pymacapp's built-in logger
-set_level(logging.DEBUG)
-
-# create an application object
-app = App(name="My First App", identifier="com.identifier")
-# setup your app by specifying the main python script ('entry point')
-app.setup(script="./src/main.py")
-# build your app
+app = App("My New App", "com.identifier")
+app.setup("./app/main.py", overwrite=True)
 app.build()
-# sign your app using the first available hash (see Setup for more)
 app.sign(get_first_application_hash())
 
-
-# create a package object
-package = Package(app, version="0.1", identifier="com.identifier.pkg")
-# build your package
-package.build(postinstall_script="./src/Scripts/postinstall")
-# sign your package
+package = Package(app, "0.0.1", "com.identifier.pkg")
+package.build(get_first_installer_hash())
 package.sign(get_first_installer_hash())
-# notorize with your apple developer id
-package.notorize(APPLE_DEVELOPER_ID_EMAIL, APP_SPECIFIC_PASSWORD)
-# wait for the notary agent to respond
-    # if valid, it will automatically staple
-    # if invalid, it will stop
-package.wait()
+package.notorize(APPLE_DEVELOPER_ACCOUNT_EMAIL, APPLE_DEVELOPER_ACCOUNT_APP_SPECIFIC_PASSWORD).wait()
 ```
 ## Currently supports
 This currently supports (and has been tested on) Python 3.9.9 on MacOS 11.6. This tool may work on other systems, but has not been tested.
@@ -98,3 +83,11 @@ Better docs coming soon; see example under Quickstart.
 
 # Project History
 This project began while performing work for Georgetown University's Department of Italian Studies. The code herein was needed to develop applications within the Department. Some of the code contains outside work, so this was a joint collaboration. 
+
+## Changelog
+### [1.1.1] 03.19.2022
+- added changelog to readme
+- updated readme's quick-start example
+- cleaned the pymacapp directory (removed unsupported beta and old content)
+- added docstrings to all functions of App and Package
+- added function to output log if notary service fails during Package.notorize(...).wait(...)

@@ -1,4 +1,0 @@
-#!/bin/bash
-APP_NAME="My First App"
-sudo chmod -R a+rwx /Applications/"$APP_NAME".app
-# exit 0

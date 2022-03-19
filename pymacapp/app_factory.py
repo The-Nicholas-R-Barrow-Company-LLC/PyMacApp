@@ -10,6 +10,13 @@ def check_entitlements():
 
 class App:
     def __init__(self, name:str, identifier:str=None) -> None:
+        """create a new application instance
+
+        :param name: the name of your application (i.e. "My New App")
+        :type name: str
+        :param identifier: a string of letters and periods, indicating a unique identifier for this app, defaults to None
+        :type identifier: str, optional
+        """
         self._name = name
         if self._name[-4:] == ".app":
             logger.info(f"{name=} should not end in .app; this will be removed automatically ({self._name} -> {self._name[:-4]})")
@@ -30,6 +37,15 @@ class App:
         return f"App({self._name=})"
 
     def setup(self, script:str, overwrite=False):
+        """prepare an application for building, etc.
+
+        :param script: the location of your main script/entry-point (i.e. .../main.py, ./app.py, etc.)
+        :type script: str
+        :param overwrite: overwrite the generated .spec file on each build (set to True if you will never modify the .spec file, but most people will want False to preserve their changes), defaults to False
+        :type overwrite: bool, optional
+        :return: self (current app)
+        :rtype: App
+        """
         self._main_script = script
         if not os.path.exists(self._main_script):
             logger.error(f"{script=} does not exist")
@@ -47,6 +63,17 @@ class App:
         return self
     
     def build(self, dist_path:str=os.path.join(os.getcwd(), "dist"), build_path:str=os.path.join(os.getcwd(), "build"), suppress_pyinstaller_output=True):
+        """build the current application into a {NAME}.app
+
+        :param dist_path: where the built distributable should be placed once it is built, defaults to os.path.join(os.getcwd(), "dist")
+        :type dist_path: str, optional
+        :param build_path: where the distributable should be built, defaults to os.path.join(os.getcwd(), "build")
+        :type build_path: str, optional
+        :param suppress_pyinstaller_output: surpress the output from pyinstaller (used to build the distributable), defaults to True
+        :type suppress_pyinstaller_output: bool, optional
+        :return: self (current app)
+        :rtype: App
+        """
         start = time.time()
         logger.info(f"(app) build initiated")
         self._build = build_path
@@ -109,6 +136,11 @@ class App:
         return self
     
     def verify(self):
+        """verify the signature on the app by sending output to console, optional / not required (for debug purposes only)
+
+        :return: self (current app)
+        :rtype: App
+        """
         command = ["codesign", "--verify", "--verbose", self._app]
         command2 = ["codesign", "-dvvv", self._app]
         process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
@@ -122,8 +154,3 @@ class App:
             logger.warning(error)
         logger.info("***** end signature verification *****")
         return self
-        
-    # def package(self, identifier:str) -> Package:
-    #     app = self
-    #     package:Package = Package(app, identifier)
-    #     return package

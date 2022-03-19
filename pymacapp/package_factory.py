@@ -22,7 +22,26 @@ class Package:
     def __repr__(self) -> str:
         return f"Package({self.app=})"
     
+    # TODO: hash should be removed and reserved for the sign action
+    # TODO: remove app_path or document it
     def build(self, hash:str, preinstall_script:str=None, postinstall_script:str=None, dist_path:str=os.path.join(os.getcwd(), "dist-pkg"), build_path:str=os.path.join(os.getcwd(), "build-pkg"), app_path:str=None):
+        """build the current application into a {NAME}.pkg
+
+        :param hash: _description_
+        :type hash: str
+        :param preinstall_script: location of a preinstall script, defaults to None
+        :type preinstall_script: str, optional
+        :param postinstall_script: location of a postinstall script, defaults to None
+        :type postinstall_script: str, optional
+        :param dist_path: where the built distributable should be placed once it is built, defaults to os.path.join(os.getcwd(), "dist-pkg")
+        :type dist_path: str, optional
+        :param build_path: where the distributable should be built, defaults to os.path.join(os.getcwd(), "build-pkg")
+        :type build_path: str, optional
+        :param app_path: _description_, defaults to None
+        :type app_path: str, optional
+        :return: self (current package)
+        :rtype: Package
+        """
         start = time.time()
         logger.info(f"(pkg) build initiated")
         self.__build = build_path
@@ -119,6 +138,13 @@ class Package:
         return self
 
     def sign(self, hash:str):
+        """sign the current package
+
+        :param hash: hash of an Installer ID (Developer); use pymacapp.helpers.get_first_installer_hash() to pull the default (see docs)
+        :type hash: str
+        :return: self (current package)
+        :rtype: Package
+        """
         command = ["productsign", "--sign", hash, os.path.join(self.__build, f"{self.app._name}.pkg"), os.path.join(self.__dist, f"{self.app._name}.pkg")]
         debug_command = ""
         for c in command:
@@ -144,6 +170,13 @@ class Package:
         return self
     
     def login(self, apple_id:str=None, app_specific_password:str=None):
+        """helper function used by .notorize(...), .wait(...), and .staple(...)
+
+        :param apple_id: email of an apple developer account, defaults to None
+        :type apple_id: str, optional
+        :param app_specific_password: app-specific password associated with an apple developer account, defaults to None
+        :type app_specific_password: str, optional
+        """
         if not hasattr(self, "_apple_id"):
             if apple_id == None:
                 apple_id = input("apple developer id email (str): ")
@@ -154,6 +187,15 @@ class Package:
             self._app_specific_password = app_specific_password
     
     def notorize(self, apple_id:str=None, app_specific_password:str=None):
+        """notorize the current package through Apple's notary service (requires .wait(...) or .staple(...), .wait(...) is reccomended)
+
+        :param apple_id: email of an apple developer account, defaults to None
+        :type apple_id: str, optional
+        :param app_specific_password: app-specific password associated with an apple developer account, defaults to None
+        :type app_specific_password: str, optional
+        :return: self (current package)
+        :rtype: Package
+        """
         self.login(apple_id=apple_id, app_specific_password=app_specific_password)
         try:
             command = ["xcrun", "altool", "--notarize-app", "--primary-bundle-id", self.identifier, f"--username={apple_id}", "--password", f"{app_specific_password}", "--file", os.path.join(self.__dist, f"{self.app._name}.pkg")]
@@ -194,6 +236,13 @@ class Package:
         return self
 
     def wait(self, apple_id:str=None, app_specific_password:str=None):
+        """wait for a response from Apple's notary service and then handle response
+
+        :param apple_id: email of an apple developer account, defaults to None
+        :type apple_id: str, optional
+        :param app_specific_password: app-specific password associated with an apple developer account, defaults to None
+        :type app_specific_password: str, optional
+        """
         self.login(apple_id=apple_id, app_specific_password=app_specific_password)
         try:
             if self._request_uuid:
@@ -210,6 +259,9 @@ class Package:
                             if "Status Message: Package Invalid" in line:
                                 check_again = False
                                 logger.error(f"unable to notorize (invalid package for uuid={self._request_uuid})")
+                                logger.info(f"waiting 10 seconds and then pulling debug log")
+                                time.sleep(10)
+                                self.log_full_notary_log()
                             elif "Status Message: Package Approved" in line:
                                 check_again = False
                                 logger.info("successful notorization; automatically attempting to staple")
@@ -222,11 +274,30 @@ class Package:
         except AttributeError:
             logger.error(f"self._request_uuid does not exist; call .notorize(...) first")
     
-    def get_full_notary_log(self, apple_id:str=None, app_specific_password:str=None):
+    def log_full_notary_log(self, apple_id:str=None, app_specific_password:str=None):
+        """logs full notary output (called when notarization fails, used to get log from notary)
+
+        :param apple_id: email of an apple developer account, defaults to None
+        :type apple_id: str, optional
+        :param app_specific_password: app-specific password associated with an apple developer account, defaults to None
+        :type app_specific_password: str, optional
+        """
         self.login(apple_id=apple_id, app_specific_password=app_specific_password)
         command = ["xcrun", "altool", "--username", self._apple_id, "--password", self._app_specific_password, "--notarization-info", self._request_uuid]
-    
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+        output, error = process.communicate()
+        if output:
+            out = output.decode("utf-8")
+            for line in out.splitlines():
+                logger.info(line)
+        if error:
+            out = output.decode("utf-8")
+            for err in out.splitlines():
+                logger.error(err)
+
     def staple(self):
+        """staple a package that has been notorized successfully, called automatically if .wait() is used after .notorize()
+        """
         logger.info("preparing to staple")
         command = ["xcrun", "stapler", "staple", os.path.join(self.__dist, f"{self.app._name}.pkg")]
         process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
@@ -239,4 +310,3 @@ class Package:
             errs = error.decode("utf-8")
             for err in errs.splitlines():
                 logger.error(err)
-        return self
