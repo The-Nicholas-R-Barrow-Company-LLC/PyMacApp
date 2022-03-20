@@ -26,6 +26,7 @@ package.notorize(APPLE_DEVELOPER_ACCOUNT_EMAIL, APPLE_DEVELOPER_ACCOUNT_APP_SPEC
 ## Currently supports
 This currently supports (and has been tested on) Python 3.9.9 on MacOS 11.6. This tool may work on other systems, but has not been tested.
 - Building .app files (beta)
+- Adding custom files/resources to app files (alpha)
 - Signing .app files (beta)
 - Building .pkg files (beta)
 - Signing .pkg files (alpha)
@@ -91,3 +92,5 @@ This project began while performing work for Georgetown University's Department 
 - cleaned the pymacapp directory (removed unsupported beta and old content)
 - added docstrings to all functions of App and Package
 - added function to output log if notary service fails during Package.notorize(...).wait(...)
+### [1.2.0] 03.20.2022
+- added alpha-feature: Resource (```from pymacapp import Resource```). This feature allows you to add custom files to your application using the App.resource(...) method. 

@@ -1,7 +1,8 @@
 from .logger import logger
 import os, subprocess, time
-from .helpers import make_spec, MINIMUM_ENTITLEMENTS
+from .helpers import make_spec, make_spec_with_datas, MINIMUM_ENTITLEMENTS
 from .entitlements import CONTENTS
+from .resource_management import Resource
 
 def check_entitlements():
     if not os.path.exists(MINIMUM_ENTITLEMENTS):
@@ -27,6 +28,7 @@ class App:
         self._build = None
         self._dist = None
         self._app = None
+        self._resources_:list[Resource] = []
         # check vars
         self._built = False
         self._signed = False
@@ -35,6 +37,17 @@ class App:
 
     def __repr__(self) -> str:
         return f"App({self._name=})"
+    
+    def resource(self, resource:Resource):
+        """add a Resource object to an application
+
+        :param resource: a Resource object
+        :type resource: Resource
+        :return: self (current app)
+        :rtype: App
+        """
+        self._resources_.append(resource)
+        return self
 
     def setup(self, script:str, overwrite=False):
         """prepare an application for building, etc.
@@ -59,7 +72,11 @@ class App:
                 self._spec = make_spec(self._name, self._identifier, self._main_script, parent_path)
         else:
             logger.info(f"creating '{file_path}'")
-            self._spec = make_spec(self._name, self._identifier, self._main_script, parent_path)
+            if self._resources_:
+                datas = [resource._get_pyinstaller_data() for resource in self._resources_]
+                self._spec = make_spec_with_datas(self._name, self._identifier, self._main_script, parent_path, datas)
+            else:
+                self._spec = make_spec(self._name, self._identifier, self._main_script, parent_path)
         return self
     
     def build(self, dist_path:str=os.path.join(os.getcwd(), "dist"), build_path:str=os.path.join(os.getcwd(), "build"), suppress_pyinstaller_output=True):
