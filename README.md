@@ -99,3 +99,6 @@ This project began while performing work for Georgetown University's Department 
 ### [1.2.1] 03.22.2022
 - added alpha-feature: custom commands (```from pymacapp.custom import bash```)
 - note: Resource feature is experiencing bug that is not yet patched.
+### [1.2.2] 03.22.2022
+- patching release 1.2.1
+- note: Resource feature is experiencing bug that is not yet patched.
