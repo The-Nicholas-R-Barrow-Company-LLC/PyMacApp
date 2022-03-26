@@ -59,11 +59,7 @@ class App:
                 self._spec = make_spec(self._name, self._identifier, self._main_script, parent_path)
         else:
             logger.info(f"creating '{file_path}'")
-            if self._resources_:
-                datas = [resource._get_pyinstaller_data() for resource in self._resources_]
-                self._spec = make_spec_with_datas(self._name, self._identifier, self._main_script, parent_path, datas)
-            else:
-                self._spec = make_spec(self._name, self._identifier, self._main_script, parent_path)
+            self._spec = make_spec(self._name, self._identifier, self._main_script, parent_path)
         return self
     
     def build(self, dist_path:str=os.path.join(os.getcwd(), "dist"), build_path:str=os.path.join(os.getcwd(), "build"), suppress_pyinstaller_output=True):
@@ -82,6 +78,7 @@ class App:
         logger.info(f"(app) build initiated")
         self._build = build_path
         self._dist = dist_path
+        self._app = os.path.join(self._dist, f"{self._name}.app")
         if not self._spec:
             logger.error(f"'{self}.__spec' is currently None; call {self}.spec() to set this value")
         else:
@@ -109,8 +106,7 @@ class App:
         :rtype: App
         """   
         check_entitlements()     
-        APP = os.path.join(self._dist, f"{self._name}.app")
-        self._app = APP
+        APP = self._app 
         __entitlements = ""
         __HASH = hash
         if entitlements == None:
@@ -136,6 +132,7 @@ class App:
             logger.warning(error)
         else:
             end = time.time()
+            self._signed = True
             logger.info(f"sign completed")
         return self
     

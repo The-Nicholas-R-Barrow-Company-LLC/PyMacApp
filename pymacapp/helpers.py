@@ -5,7 +5,7 @@ from .command import cmd
 MINIMUM_ENTITLEMENTS = os.path.join(os.path.dirname(__file__), "entitlements.plist")
 
 # All scripts should be copied into this folder
-DEFAULT_SCRIPTS = os.path.join(os.path.dirname(__file__), "Scripts/")
+COLLECT_SCRIPTS_HERE = os.path.join(os.path.dirname(__file__), "Scripts/")
 
 def get_first_application_hash(output:bool=False) -> str:
     """equivalent to running "security find-identity -p basic -v" in terminal and looking for the hash next to "Developer ID Application"

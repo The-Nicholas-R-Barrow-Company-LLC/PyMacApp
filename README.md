@@ -33,7 +33,7 @@ Feature (release phase):
 - Signing .pkg files (alpha)
 - Notorizing .pkg files (alpha)
 - Stapling .pkg files (alpha)
-- Custom build commands, natively in Python (alpha)
+- Custom build commands, natively in Python (beta)
 
 # Setup
 ## Precursor - PyPi: PyMacApp
@@ -62,8 +62,9 @@ choose Apple ID
 - repeating, click the plus in the bottom corner
 - choose "Developer ID Installer"
 ### (2/3) Get Certificates and Add to Project
-- run:
-> security find-identity -p basic -v
+#### Note: as of version 1.2.3, you should use ```from pymacapp.helpers import get_first_application_hash, get_first_installer_hash``` to get your hashes in your ```build.py``` script
+- to manually get hashes, run:
+> ```security find-identity -p basic -v```
 - your output will look like:
 > 1) HASH_OF_ID_HERE "Developer ID Application: ..."
 > 2) HASH_OF_ID_HERE "Developer ID Installer: ..."
@@ -105,3 +106,7 @@ This project began while performing work for Georgetown University's Department 
 ### [1.2.3] 03.26.2022
 - relocating custom commands (```from pymacapp.command import cmd```) and moving to beta
 - removing: Resource feature introduced in 1.2.0
+### [1.2.4] 03.26.2022
+- bug fixes
+- moving some ```subprocess``` commands from ```subprocess.Popen(...)``` to a custom function which uses ```subprocess.run(...)```
+- updating README

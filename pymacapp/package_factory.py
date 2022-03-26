@@ -1,6 +1,6 @@
 from .app_factory import App
 from .logger import logger
-from .helpers import DEFAULT_SCRIPTS
+from .helpers import COLLECT_SCRIPTS_HERE, cmd
 import os, time, shutil, subprocess
 
 
@@ -12,23 +12,22 @@ class Package:
         self.__build = None
         self.__dist = None
         logger.debug(f"{self} created")
-        logger.debug(self.app._app)
-        if not os.path.exists(DEFAULT_SCRIPTS):
+        if not os.path.exists(self.app._app):
+            logger.error(f"app build ('{self.app._app}') does not exist")
+            raise RuntimeError()
+        if not os.path.exists(COLLECT_SCRIPTS_HERE):
             try:
-                os.mkdir(DEFAULT_SCRIPTS)
+                os.mkdir(COLLECT_SCRIPTS_HERE)
             except:
-                logger.warning(f"unable to make directory '{DEFAULT_SCRIPTS}'")
+                logger.warning(f"unable to make directory '{COLLECT_SCRIPTS_HERE}'")
     
     def __repr__(self) -> str:
         return f"Package({self.app=})"
     
-    # TODO: hash should be removed and reserved for the sign action
     # TODO: remove app_path or document it
-    def build(self, hash:str, preinstall_script:str=None, postinstall_script:str=None, dist_path:str=os.path.join(os.getcwd(), "dist-pkg"), build_path:str=os.path.join(os.getcwd(), "build-pkg"), app_path:str=None):
+    def build(self, preinstall_script:str=None, postinstall_script:str=None, dist_path:str=os.path.join(os.getcwd(), "dist"), build_path:str=os.path.join(os.getcwd(), "build")):
         """build the current application into a {NAME}.pkg
 
-        :param hash: _description_
-        :type hash: str
         :param preinstall_script: location of a preinstall script, defaults to None
         :type preinstall_script: str, optional
         :param postinstall_script: location of a postinstall script, defaults to None
@@ -62,15 +61,9 @@ class Package:
                 logger.error(f"unable to create {self.__dist}")
             else:
                 logger.info(f"created {self.__dist}")
-        if app_path:
-            if self.app._app:
-                logger.warning(f"{self.app}.__app is not empty ({self.app._app}) but {app_path=} provided; using {app_path}")
-            self.app._app = app_path
-        if not self.app._app and not os.path.exists(self.app._app):
-            logger.error(f"current app path ({self.app._app}) does not exist and {app_path=} does not exist; must set one")
 
         # 1: make sure Scripts are executable: sudo chmod -R +x $SCRIPTS
-        scripts = DEFAULT_SCRIPTS
+        scripts = COLLECT_SCRIPTS_HERE
         PRE = None
         POST = None
         if preinstall_script:
@@ -90,10 +83,10 @@ class Package:
             else:
                 logger.error(f"unable to verify '{postinstall_script=}'; it will be ignored")
         if PRE or POST:
-            for file in [f for f in os.listdir(DEFAULT_SCRIPTS) if os.path.isfile(os.path.join(DEFAULT_SCRIPTS, f))]:
+            for file in [f for f in os.listdir(COLLECT_SCRIPTS_HERE) if os.path.isfile(os.path.join(COLLECT_SCRIPTS_HERE, f))]:
                 if file != "preinstall" and file != "postinstall":
-                    logger.warning(f"found unknown file '{file}' in Scripts build directory ({DEFAULT_SCRIPTS}); it will be removed")
-                    os.remove(os.path.join(DEFAULT_SCRIPTS, file))
+                    logger.warning(f"found unknown file '{file}' in Scripts build directory ({COLLECT_SCRIPTS_HERE}); it will be removed")
+                    os.remove(os.path.join(COLLECT_SCRIPTS_HERE, file))
             if PRE:
                 # this is to preserve the default script
                 if PRE != os.path.join(os.path.dirname(__file__), "Scripts", "preinstall"):
@@ -103,38 +96,18 @@ class Package:
                 if POST != os.path.join(os.path.dirname(__file__), "Scripts", "postinstall"):
                     shutil.copyfile(POST, os.path.join(os.path.dirname(__file__), "Scripts", "postinstall"))
             logger.info(f"ensuring {scripts=} is executable (sudo chmod -R +x {scripts})")
-            scripts_command = ["sudo", "chmod", "-R", "+x", scripts]
-            try:
-                process = subprocess.Popen(scripts_command, stdout=subprocess.PIPE, cwd=os.getcwd())
-                output, error = process.communicate()
-                if error:
-                    logger.warning(error)
-            except:
-                logger.warning(f"unable to verify all scripts in '{scripts}' are executable")
+            cmd(f"sudo chmod -R +x {scripts}")
         
         # 2: productbuild
-        build_command = ["pkgbuild", "--root", self.app._app, "--install-location", f"/Applications/{self.app._name}.app", os.path.join(self.__build, f"{self.app._name}.pkg")]
-        if PRE or POST:
-            build_command.insert(1, DEFAULT_SCRIPTS)
-            build_command.insert(1, "--scripts")
-        if self.identifier:
-            build_command.insert(1, self.identifier)
-            build_command.insert(1, "--identifier")
+        build_command = f"pkgbuild"
         if self.version:
-            build_command.insert(1, self.version)
-            build_command.insert(1, "--version")
-        if True:
-            build_command.insert(1, hash)
-            build_command.insert(1, "--sign")
-        debug_command = ' '.join(build_command)
-        logger.debug(f"attempting pkgbuild command ({debug_command})")
-        try:
-            process = subprocess.Popen(build_command, stdout=subprocess.PIPE, cwd=os.getcwd())
-            output, error = process.communicate()
-            if error:
-                logger.warning(error)
-        except:
-            logger.error(f"unable to execute pkgbuild")
+            build_command = build_command + f" --version {self.version}"
+        if self.identifier:
+            build_command = build_command + f" --identifier {self.identifier}"
+        if PRE or POST:
+            build_command = build_command + f" --scripts '{COLLECT_SCRIPTS_HERE}'"
+        build_command = build_command + f" --root '{self.app._app}' --install-location '/Applications/{self.app._name}.app' '{os.path.join(self.__build, f'{self.app._name}.pkg')}'"
+        cmd(build_command)
         return self
 
     def sign(self, hash:str):
@@ -145,28 +118,12 @@ class Package:
         :return: self (current package)
         :rtype: Package
         """
-        command = ["productsign", "--sign", hash, os.path.join(self.__build, f"{self.app._name}.pkg"), os.path.join(self.__dist, f"{self.app._name}.pkg")]
-        debug_command = ""
-        for c in command:
-            if " " in c:
-                debug_command = f"{debug_command} '{c}'"
-            else:
-                debug_command = f"{debug_command} {c}"
-        logger.debug(f"signing with: {debug_command}")
+        command = f"productsign --sign {hash}" 
+        command = command + f""" '{os.path.join(self.__build, f"{self.app._name}.pkg")}'"""
+        command = command + f""" '{os.path.join(self.__dist, f"{self.app._name}.pkg")}'"""
+        logger.debug(f"signing with: {command}")
         logger.info("attempting to package sign")
-        try:
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
-            output, error = process.communicate()
-            if output:
-                out = output.decode("utf-8")
-                for line in out.splitlines():
-                    logger.info(line)
-            if error:
-                logger.warning(error)
-        except Exception as e:
-            logger.error(f"unable to execute productsign: {e}")
-        else:
-            logger.info("sign command executed")
+        cmd(command)
         return self
     
     def login(self, apple_id:str=None, app_specific_password:str=None):
@@ -196,40 +153,21 @@ class Package:
         :return: self (current package)
         :rtype: Package
         """
+        if not self.app._signed:
+            logger.warning(f"pymacapp does not indicate that your app {self.app} was signed; notary service may fail if the .app is not signed (you should call .sign(...) on your App instance)")
+            if input("Are you sure you want to continue (y): ") != "y":
+                raise KeyboardInterrupt()
         self.login(apple_id=apple_id, app_specific_password=app_specific_password)
-        try:
-            command = ["xcrun", "altool", "--notarize-app", "--primary-bundle-id", self.identifier, f"--username={apple_id}", "--password", f"{app_specific_password}", "--file", os.path.join(self.__dist, f"{self.app._name}.pkg")]
-            debug_command = ""
-            for c in command:
-                if " " in c:
-                    debug_command = f"{debug_command} '{c}'"
-                else:
-                    debug_command = f"{debug_command} {c}"
-            logger.debug(f"signing with: {debug_command}")
-            logger.info("attempting to notorize")
-            try:
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
-                output, error = process.communicate()
-                if output:
-                    out = output.decode("utf-8")
-                    for line in out.splitlines():
-                        if "RequestUUID" in line:
-                            self._request_uuid = line.split(" = ")[1]
-                if error:
-                    errs = error.decode("utf-8")
-                    for err in errs.splitlines():
-                        logger.error(err)
-            except:
-                logger.error(f"unable to notorize")
-            else:
-                logger.info("notorize command executed")
-                try:
-                    if self._request_uuid:
-                        logger.info(f"uploaded to notary service (uuid={self._request_uuid})")
-                except:
-                    pass
-        except AttributeError as e:
-            logger.error(f"attribute error: {e}")
+        command = f"""xcrun altool --notarize-app --primary-bundle-id {self.identifier} --username={apple_id} --password {app_specific_password} --file '{os.path.join(self.__dist, f"{self.app._name}.pkg")}'"""
+        logger.debug(f"signing with: {command}")
+        logger.info("attempting to notorize")
+        process = cmd(command)
+        output, error = process.output, process.error
+        if output:
+            for line in output.splitlines():
+                if "RequestUUID" in line:
+                    self._request_uuid = line.split(" = ")[1]
+                    logger.info(f"uploaded to notary service (uuid={self._request_uuid})")
     # check status: xcrun altool --notarization-history 0 -u "nrb@nicholasrbarrow.com" -p "@keychain:Developer-altool"
     # if it fails: xcrun altool --username "nrb@nicholasrbarrow.com" --password "@keychain:Developer-altool" --notarization-info "Your-Request-UUID"
 # when approved, run: xcrun stapler staple /Users/nicholasbarrow/GitHub/italian-department-budget-checker/Packages/build/Italian\ Department\ Budget\ Checker\ SIGNED.pkg
