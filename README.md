@@ -102,3 +102,6 @@ This project began while performing work for Georgetown University's Department 
 ### [1.2.2] 03.22.2022
 - patching release 1.2.1
 - note: Resource feature is experiencing bug that is not yet patched.
+### [1.2.3] 03.26.2022
+- relocating custom commands (```from pymacapp.command import cmd```) and moving to beta
+- removing: Resource feature introduced in 1.2.0

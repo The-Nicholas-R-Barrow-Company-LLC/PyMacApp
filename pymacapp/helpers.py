@@ -1,26 +1,30 @@
 import subprocess, os
 from .logger import logger
+from .command import cmd
 
 MINIMUM_ENTITLEMENTS = os.path.join(os.path.dirname(__file__), "entitlements.plist")
 
 # All scripts should be copied into this folder
 DEFAULT_SCRIPTS = os.path.join(os.path.dirname(__file__), "Scripts/")
 
-def get_first_application_hash() -> str:
+def get_first_application_hash(output:bool=False) -> str:
     """equivalent to running "security find-identity -p basic -v" in terminal and looking for the hash next to "Developer ID Application"
 
+    :param output: log output and errors from the command to find the application hash, defaults to False
+    :type output: bool, optional
     :return: the Developer ID Application hash
     :rtype: str
-    """
-    command = ["security", "find-identity", "-p", "basic", "-v"]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
-    output, error = process.communicate()
+    """    
+    command = "security find-identity -p basic -v"
+    
+    # process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+    process, output, error = cmd(command, suppress_log=not output)
     if not error: 
         lines = output.splitlines()
         for line in lines:
             if "Developer ID Application" in str(line):
                 h = line.split()[1]
-                return (h).decode()
+                return h
     else:
         logger.debug(f"an error occurred: {error}")
 
