@@ -42,17 +42,17 @@ def spec(name:str,
         specpath:str=os.path.abspath(os.path.dirname(__file__)),
         log_level:str = "INFO",
         brute:bool = False):
-    command = "pyi-makespec"
+    command = "pyi-makespec --windowed"
 
     if not validate_app_name(name):
         if not brute:
             raise BuildException(f"unable to validate {name=}")
         else:
-            command += f" --name '{name}.app'"
-            logger.debug(f" --name '{name}.app'")
+            command += f" --name '{name}'"
+            logger.debug(f" --name '{name}'")
     else:
-        command += f" --name '{name}.app'"
-        logger.debug(f" --name '{name}.app'")
+        command += f" --name '{name}'"
+        logger.debug(f" --name '{name}'")
     
     if not validate_file(main_script, ".py"):
         if not brute:
