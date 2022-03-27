@@ -34,7 +34,7 @@ def validate_directory(path:str) -> bool:
 
 def validate_file(path:str, type:str=None) -> bool:
     if os.path.exists(path) and os.path.isfile(path):
-        if path:
+        if type:
             if path[-len(type):] == type:
                 logger.info(f"validated: {path}")
                 return True
