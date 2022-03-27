@@ -110,3 +110,7 @@ This project began while performing work for Georgetown University's Department 
 - bug fixes
 - moving some ```subprocess``` commands from ```subprocess.Popen(...)``` to a custom function which uses ```subprocess.run(...)```
 - updating README
+### [1.2.5] 03.27.2022
+- added: new coverage for py-makespec (included with pyinstaller)
+- deprecated: App.setup(...); see below
+- added: App.config(...) to use new coverage for py-makespec

@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="PyMacApp",
-    version="1.2.4",
+    version="1.2.5",
     description="Basic Tools to Build, Package, Sign, and Notorize Python Apps for MacOS",
     long_description=README,
     long_description_content_type="text/markdown",

@@ -1,3 +1,4 @@
+from .decorators import deprecated
 from .logger import logger
 import os, subprocess, time
 from .helpers import make_spec, make_spec_with_datas, MINIMUM_ENTITLEMENTS
@@ -25,10 +26,13 @@ class App:
             logger.info(f"{name=} should not end in .app; this will be removed automatically ({self._name} -> {self._name[:-4]})")
             self._name = self._name[:-4]
         self._identifier = identifier
-        self._icon = os.path.abspath(icon)
-        if not os.path.exists(icon) and not os.path.isfile(icon):
-            logger.info(f"{icon} does not exist or is not a file; it will be ignored")
-            self._icon = None
+        self._icon = None
+        if icon:
+            if not os.path.exists(icon) and not os.path.isfile(icon):
+                logger.info(f"{icon} does not exist or is not a file; it will be ignored")
+                self._icon = None
+            else:
+                self._icon = os.path.abspath(icon)
         self._main_script = None
         self._spec = None
         self._build = None
@@ -72,6 +76,7 @@ class App:
                             brute=False)
         return self
 
+    @deprecated
     def setup(self, script:str, overwrite=False):
         """prepare an application for building, etc.
 
