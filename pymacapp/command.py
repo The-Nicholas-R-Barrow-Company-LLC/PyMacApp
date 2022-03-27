@@ -2,7 +2,7 @@ import subprocess, os
 from subprocess import CompletedProcess
 from .logger import logger
 
-class Output:
+class Command:
     def __init__(self, process:CompletedProcess) -> None:
         self.process = process
         self.output = self.process.stdout
@@ -51,7 +51,7 @@ def cmd(cmd:str, executable:str='/bin/bash', cwd:str=os.getcwd(), suppress_log =
                     logger.error(f"BEGIN OUTPUT FROM COMMAND: \n{process.stderr}")
                     logger.error(f"END OUTPUT FROM COMMAND")
                     logger.info(f"error will be returned as an Output object in index 2")
-                return Output(process)
+                return Command(process)
                 
         else:
             logger.error(f"'{cwd}' is not a directory")

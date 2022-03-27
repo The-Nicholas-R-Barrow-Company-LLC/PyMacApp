@@ -1,6 +1,7 @@
 from .logger import logger
 import os, subprocess, time
 from .helpers import make_spec, make_spec_with_datas, MINIMUM_ENTITLEMENTS
+from .pyinstaller import spec
 from .entitlements import CONTENTS
 
 def check_entitlements():
@@ -9,19 +10,25 @@ def check_entitlements():
             f.writelines(CONTENTS)
 
 class App:
-    def __init__(self, name:str, identifier:str=None) -> None:
+    def __init__(self, name:str, identifier:str=None, icon:str=None) -> None:
         """create a new application instance
 
         :param name: the name of your application (i.e. "My New App")
         :type name: str
         :param identifier: a string of letters and periods, indicating a unique identifier for this app, defaults to None
         :type identifier: str, optional
+        :param icon: path to an icon file for your app
+        :type icon: str, optional
         """
         self._name = name
         if self._name[-4:] == ".app":
             logger.info(f"{name=} should not end in .app; this will be removed automatically ({self._name} -> {self._name[:-4]})")
             self._name = self._name[:-4]
         self._identifier = identifier
+        self._icon = os.path.abspath(icon)
+        if not os.path.exists(icon) and not os.path.isfile(icon):
+            logger.info(f"{icon} does not exist or is not a file; it will be ignored")
+            self._icon = None
         self._main_script = None
         self._spec = None
         self._build = None
@@ -35,6 +42,35 @@ class App:
 
     def __repr__(self) -> str:
         return f"App({self._name=})"
+
+    def config(self, main:str, architecture:str="universal2", entitlements:str=MINIMUM_ENTITLEMENTS, specpath:str=os.path.abspath(os.path.dirname(__file__)), log_level:str="WARN", brute:bool=False):
+        """configure the .spec file that pyinstaller uses to build the app
+
+        :param main: the main script (main.py, etc.) where you run your application from
+        :type main: str
+        :param architecture: the arhitecture to build your app for, defaults to "universal2"
+        :type architecture: str, optional
+        :param entitlements: an entitlements file, defaults to MINIMUM_ENTITLEMENTS
+        :type entitlements: str, optional
+        :param specpath: the directory to store the .spec file in, defaults to os.path.abspath(os.path.dirname(__file__))
+        :type specpath: str, optional
+        :param log_level: the level of output to be displayed from pyinstaller, defaults to "WARN"
+        :type log_level: str, optional
+        :param brute: override built-in checks by pymacapp, defaults to False
+        :type brute: bool, optional
+        :return: self (current app)
+        :rtype: App
+        """
+        self._spec = spec(name=self._name, 
+                            main_script=main, 
+                            icon=self._icon, 
+                            identifier=self._identifier, 
+                            architecture=architecture, 
+                            entitlements=entitlements, 
+                            specpath=specpath,
+                            log_level=log_level,
+                            brute=False)
+        return self
 
     def setup(self, script:str, overwrite=False):
         """prepare an application for building, etc.

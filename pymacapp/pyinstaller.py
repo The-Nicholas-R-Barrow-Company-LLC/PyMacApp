@@ -2,7 +2,7 @@ from .logger import logger
 from .exceptions import BuildException
 from .validators import validate_app_name, validate_directory, validate_file,  validate_identifier, validate_pyinstaller_architecture, validate_pyinstaller_log_level
 from .helpers import ARCHITECTURES, PYINSTALLER_LOG_LEVELS
-from .command import cmd
+from .command import Command, cmd
 import os
 from dataclasses import dataclass
 """
@@ -112,5 +112,9 @@ def spec(name:str,
 
     command += f" '{main_script}'"
 
-    return cmd(command)
+    resp:Command = cmd(command)
+
+    for line in resp.output.splitlines():
+        if "Wrote " in line:
+            return line[6:-1]
 
