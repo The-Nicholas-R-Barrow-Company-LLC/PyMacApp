@@ -48,11 +48,11 @@ def spec(name:str,
         if not brute:
             raise BuildException(f"unable to validate {name=}")
         else:
-            command += f" --name '{name}'"
-            logger.debug(f" --name '{name}'")
+            command += f" --name '{name}.app'"
+            logger.debug(f" --name '{name}.app'")
     else:
-        command += f" --name '{name}'"
-        logger.debug(f" --name '{name}'")
+        command += f" --name '{name}.app'"
+        logger.debug(f" --name '{name}.app'")
     
     if not validate_file(main_script, ".py"):
         if not brute:

@@ -118,4 +118,6 @@ This project began while performing work for Georgetown University's Department 
 - minor bug fixes to new validators
 ### [1.2.7] 03.27.2022
 - minor bug fixes to new coverage for py-makespec
+### [1.2.8] 03.27.2022
+- minor bug fixes to new coverage for py-makespec
 
