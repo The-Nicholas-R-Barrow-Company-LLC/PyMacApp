@@ -122,4 +122,6 @@ This project began while performing work for Georgetown University's Department 
 - minor bug fixes to new coverage for py-makespec
 ### [1.2.9] 03.27.2022
 - minor bug fixes to new coverage for py-makespec
+### [1.3.0] 03.28.2022
+- added: ```pymacapp.versioning.VersionLocker```. This feature allows you to set a version (an unlimited-length string of non-negative integers delimited by periods ('.')) and pymacapp will store the version number in a file whenever its ```.lock()``` method is called (this is useful so that you can decide when to lock the version (i.e. do not lock until after the app successfully builds, successfully packages, etc.)). 
 
