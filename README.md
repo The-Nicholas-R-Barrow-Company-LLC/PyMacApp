@@ -35,10 +35,15 @@ Feature (release phase):
 - Stapling .pkg files (alpha)
 - Custom build commands, natively in Python (beta)
 
-# Setup
+# Full Setup (Code-signing)
 ## Precursor - PyPi: PyMacApp
 ```pip3 install PyMacApp```
 - Uses PyInstaller, should install automatically
+
+## Precursor - Xcode
+Make sure to have xcode installed, and verify that the xcode command line tools are installed: 
+- ```xcode-select --install```
+
 ## Part 1: Developer Account
 Note: This section is taken from: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
 ### (1/2) Create a developer account with Apple
