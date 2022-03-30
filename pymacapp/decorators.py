@@ -1,16 +1,9 @@
 from .logger import logger
 from functools import wraps
 
-def deprecated(f):
+def deprecated(f, message:str=None):
     @wraps(f)
     def decorated(*args, **kwargs):
-        logger.warn('.setup(...) is deprecated; .config(...) should be used instead')
+        logger.warn(message)
         return f(*args, **kwargs)
     return decorated
-
-@deprecated
-def __hello_world__():
-    print("hello world!")
-
-if __name__ == "__main__":
-    __hello_world__()

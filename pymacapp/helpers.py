@@ -1,6 +1,7 @@
 import subprocess, os
 from .logger import logger
 from .command import cmd
+from .decorators import deprecated
 
 MINIMUM_ENTITLEMENTS = os.path.join(os.path.dirname(__file__), "entitlements.plist")
 
@@ -13,6 +14,7 @@ BUNDLE_IDENTIFIER_REGEX = r"^[A-Za-z0-9\.\-]+$"
 ARCHITECTURES = ["x86_64", "arm64", "universal2"]
 PYINSTALLER_LOG_LEVELS = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"]
 
+@deprecated(".get_first_application_hash(...) has been moved to pymacapp.app_factory")
 def get_first_application_hash(output:bool=False) -> str:
     """equivalent to running "security find-identity -p basic -v" in terminal and looking for the hash next to "Developer ID Application"
 

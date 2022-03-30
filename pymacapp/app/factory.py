@@ -1,16 +1,15 @@
-from .decorators import deprecated
-from .logger import logger
-import os, subprocess, time
-from .helpers import make_spec, make_spec_with_datas, MINIMUM_ENTITLEMENTS
-from .pyinstaller import spec
-from .entitlements import CONTENTS
+import os, time
+from ..pyinstaller import spec
+from ..helpers import MINIMUM_ENTITLEMENTS
+from ..command import cmd
+from ..logger import logger
+from ..entitlements import CONTENTS as ENTITLEMENTS
 
 def check_entitlements():
     if not os.path.exists(MINIMUM_ENTITLEMENTS):
         with open(MINIMUM_ENTITLEMENTS, "w") as f:
-            f.writelines(CONTENTS)
+            f.writelines(ENTITLEMENTS)
 
-@deprecated("App has been moved to pymacapp.app.factory")
 class App:
     def __init__(self, name:str, identifier:str=None, icon:str=None) -> None:
         """create a new application instance
@@ -75,44 +74,16 @@ class App:
                             specpath=specpath,
                             log_level=log_level,
                             brute=False)
+        self._entitlements = entitlements
         return self
 
-    @deprecated(message='.setup(...) is deprecated; .config(...) should be used instead')
-    def setup(self, script:str, overwrite=False):
-        """prepare an application for building, etc.
-
-        :param script: the location of your main script/entry-point (i.e. .../main.py, ./app.py, etc.)
-        :type script: str
-        :param overwrite: overwrite the generated .spec file on each build (set to True if you will never modify the .spec file, but most people will want False to preserve their changes), defaults to False
-        :type overwrite: bool, optional
-        :return: self (current app)
-        :rtype: App
-        """
-        self._main_script = script
-        if not os.path.exists(self._main_script):
-            logger.error(f"{script=} does not exist")
-        parent_path = os.path.abspath(os.path.dirname(self._main_script))
-        file_path = os.path.join(parent_path, f"{self._name}.spec")
-        if os.path.exists(file_path):
-            logger.info(f"'{file_path}' exists (delete to re-generate or set overwrite=True)")
-            self._spec = file_path
-            if overwrite:
-                logger.info(f"{overwrite=}, re-generating '{file_path}'")
-                self._spec = make_spec(self._name, self._identifier, self._main_script, parent_path)
-        else:
-            logger.info(f"creating '{file_path}'")
-            self._spec = make_spec(self._name, self._identifier, self._main_script, parent_path)
-        return self
-    
-    def build(self, dist_path:str=os.path.join(os.getcwd(), "dist"), build_path:str=os.path.join(os.getcwd(), "build"), suppress_pyinstaller_output=True):
+    def build(self, dist_path:str=os.path.join(os.getcwd(), "dist"), build_path:str=os.path.join(os.getcwd(), "build")):
         """build the current application into a {NAME}.app
 
         :param dist_path: where the built distributable should be placed once it is built, defaults to os.path.join(os.getcwd(), "dist")
         :type dist_path: str, optional
         :param build_path: where the distributable should be built, defaults to os.path.join(os.getcwd(), "build")
         :type build_path: str, optional
-        :param suppress_pyinstaller_output: surpress the output from pyinstaller (used to build the distributable), defaults to True
-        :type suppress_pyinstaller_output: bool, optional
         :return: self (current app)
         :rtype: App
         """
@@ -122,28 +93,33 @@ class App:
         self._dist = dist_path
         self._app = os.path.join(self._dist, f"{self._name}.app")
         if not self._spec:
-            logger.error(f"'{self}.__spec' is currently None; call {self}.spec() to set this value")
-        else:
-            command = ["pyinstaller", "--noconfirm", "--distpath", f'{self._dist}', "--workpath", f'{self._build}', self._spec]
-            if suppress_pyinstaller_output:
-                command.insert(2, "--log-level")
-                command.insert(3, "WARN")
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
-            output, error = process.communicate()
-            if error:
-                logger.warning(error)
-            else:
-                end = time.time()
-                logger.info(f"build completed in {round(end-start, 3)} seconds without errors detected")
+            logger.error(f"'{self}.__spec' is currently None; call {self}.config(...) to set this value")
+            raise RuntimeError(f"'{self}.__spec' is currently None; call {self}.config(...) to set this value")
+        if not os.path.isdir(self._dist):
+            logger.warning(f"dist_path ('{self._dist}') does not exist; attempting to create")
+            try:
+                os.mkdir(self._dist)
+            except:
+                raise RuntimeError(f"failed to create non-existent dist_path ('{self._dist}')")
+        if not os.path.isdir(self._build):
+            logger.warning(f"build_path ('{self._build}') does not exist; attempting to create")
+            try:
+                os.mkdir(self._build)
+            except:
+                raise RuntimeError(f"failed to create non-existent build_path ('{self._build}')")
+
+        command = f"pyinstaller --noconfirm --distpath '{self._dist}' --workpath '{self._build}' '{self._spec}'"
+        cmd(command)
+        self._built = True
+        end = time.time()
+        logger.info(f"(app) build completed in {round(end-start, 2)} second(s)")
         return self
     
-    def sign(self, hash:str, entitlements:str=None):
+    def sign(self, hash:str):
         """sign an application
 
         :param hash: hash of an Application ID (Developer); use pymacapp.helpers.get_first_application_hash() to pull the default (see docs)
         :type hash: str
-        :param entitlements: entitlements.plist file; use None for default/minimum file, defaults to None
-        :type entitlements: str, optional
         :return: self (current app)
         :rtype: App
         """   
@@ -151,31 +127,18 @@ class App:
         APP = self._app 
         __entitlements = ""
         __HASH = hash
-        if entitlements == None:
-            logger.info(f"{entitlements=}, using default entitlements ({MINIMUM_ENTITLEMENTS=})")
+        if self._entitlements == None:
+            logger.info(f"{self._entitlements=}, using default entitlements ({MINIMUM_ENTITLEMENTS=})")
             __entitlements = MINIMUM_ENTITLEMENTS
-        elif os.path.exists(entitlements):
-            __entitlements = entitlements
+        elif os.path.exists(self._entitlements):
+            __entitlements = self._entitlements
         else:
-            logger.error(f"{entitlements=} does not exist")
+            logger.error(f"{self._entitlements=} does not exist")
         if not os.path.exists(APP):
-            logger.error(f".app ('{APP}') does not exist")
-        command = ["codesign", "--deep", "--force", "--timestamp", "--options", "runtime", "--entitlements", __entitlements, "--sign", __HASH, APP]
-        debug_command = ""
-        for c in command:
-            if " " in c:
-                debug_command = f"{debug_command} '{c}'"
-            else:
-                debug_command = f"{debug_command} {c}"
-        logger.debug(f"(app) signing with: {debug_command}")
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
-        output, error = process.communicate()
-        if error:
-            logger.warning(error)
-        else:
-            end = time.time()
-            self._signed = True
-            logger.info(f"sign completed")
+            logger.error(f".app ('{APP}') does not exist; call .build(...) first")
+        command = f"codesign --deep --force --timestamp --options runtime --entitlements '{__entitlements}' --sign '{__HASH}' '{APP}'"
+        cmd(command)
+        self._signed = True
         return self
     
     def verify(self):
@@ -184,16 +147,9 @@ class App:
         :return: self (current app)
         :rtype: App
         """
-        command = ["codesign", "--verify", "--verbose", self._app]
-        command2 = ["codesign", "-dvvv", self._app]
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
         logger.info("***** begin signature verification *****")
-        output, error = process.communicate()
-        if error:
-            logger.warning(error)
-        process2 = subprocess.Popen(command2, stdout=subprocess.PIPE, cwd=os.getcwd())
-        output, error = process2.communicate()
-        if error:
-            logger.warning(error)
+        cmd(f"codesign --verify --verbose '{self._app}'")
+        cmd(f"codesign -dvvv '{self._app}'")
         logger.info("***** end signature verification *****")
         return self
+
