@@ -1,7 +1,10 @@
-import configparser, os, sys
+import configparser
+import os
+import sys
 from .validators import validate_version
 
 LOCK_FILE = os.path.join(os.path.dirname(__file__), "VERSION_LOCK.ini")
+
 
 def _version_str_to_list(version:str) -> "list[int]":
     try:
@@ -10,6 +13,7 @@ def _version_str_to_list(version:str) -> "list[int]":
         raise RuntimeError(f"invalid version detected: {version=} (str to int conversion error)")
     else:
         return lst
+
 
 class VersionLocker:
 

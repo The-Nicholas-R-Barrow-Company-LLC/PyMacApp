@@ -1,4 +1,5 @@
-import subprocess, os
+import subprocess
+import os
 from subprocess import CompletedProcess
 from .logger import logger
 
@@ -30,32 +31,32 @@ class Command:
         r:list[str] = self.process.args
         return r
 
-
-def cmd(cmd:str, executable:str='/bin/bash', cwd:str=os.getcwd(), suppress_log = False):
-    if not suppress_log:
-        logger.debug(f"attempting to execute '{cmd}' using '{executable}' in '{cwd}'")
-    if os.access(executable, os.X_OK):
-        if os.path.isdir(cwd):
-            try:
-                process = subprocess.run(cmd, shell=True, executable=executable, cwd=cwd, capture_output=True, text=True)
-            except Exception as e:
-                logger.warning(f"an exception occurred while trying to execute command: {e}")
+    @classmethod
+    def run(cls, cmd:str, executable:str='/bin/bash', cwd:str=os.getcwd(), suppress_log = False):
+        if not suppress_log:
+            logger.debug(f"""attempting to execute "{cmd}" using "{executable}" in "{cwd}" """)
+        if os.access(executable, os.X_OK):
+            if os.path.isdir(cwd):
+                try:
+                    process = subprocess.run(cmd, shell=True, executable=executable, cwd=cwd, capture_output=True, text=True)
+                except Exception as e:
+                    logger.warning(f"an exception occurred while trying to execute command: {e}")
+                else:
+                    if not suppress_log:
+                        logger.info(f"process will be returned as a Command object in index 0")
+                    if process.stdout and not suppress_log:
+                            logger.info(f"BEGIN OUTPUT FROM COMMAND: \n{process.stdout}")
+                            logger.info(f"END OUTPUT FROM COMMAND")
+                            logger.info(f"output will be returned as an Output object in index 1")
+                    if process.stderr and not suppress_log:
+                        logger.error(f"BEGIN OUTPUT FROM COMMAND: \n{process.stderr}")
+                        logger.error(f"END OUTPUT FROM COMMAND")
+                        logger.info(f"error will be returned as an Output object in index 2")
+                    return cls(process)
+                    
             else:
-                if not suppress_log:
-                    logger.info(f"process will be returned as an Output object in index 0")
-                if process.stdout and not suppress_log:
-                        logger.info(f"BEGIN OUTPUT FROM COMMAND: \n{process.stdout}")
-                        logger.info(f"END OUTPUT FROM COMMAND")
-                        logger.info(f"output will be returned as an Output object in index 1")
-                if process.stderr and not suppress_log:
-                    logger.error(f"BEGIN OUTPUT FROM COMMAND: \n{process.stderr}")
-                    logger.error(f"END OUTPUT FROM COMMAND")
-                    logger.info(f"error will be returned as an Output object in index 2")
-                return Command(process)
-                
+                logger.error(f"'{cwd}' is not a directory")
+                raise RuntimeError()
         else:
-            logger.error(f"'{cwd}' is not a directory")
+            logger.error(f"'{executable}' is not an executable")
             raise RuntimeError()
-    else:
-        logger.error(f"'{executable}' is not an executable")
-        raise RuntimeError()

@@ -1,9 +1,9 @@
 from .logger import logger
 from functools import wraps
 
-def deprecated(f, message:str=None):
+def deprecated(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        logger.warn(message)
+        logger.critical(f"{f.__name__} is deprecated and will be removed in the future")
         return f(*args, **kwargs)
     return decorated

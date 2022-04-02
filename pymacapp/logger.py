@@ -6,7 +6,3 @@ streamHandler = logging.StreamHandler()
 streamHandler.setLevel(logging.DEBUG)
 streamHandler.setFormatter(formatter)
 logger.addHandler(streamHandler)
-
-def set_level(level:int=logging.DEBUG):
-    logger.setLevel(level)
-    streamHandler.setLevel(level)

@@ -1,6 +1,8 @@
-import re, os
+import re
+import os
 from .logger import logger
 from .helpers import APP_NAME_REGEX, BUNDLE_IDENTIFIER_REGEX, ARCHITECTURES, PYINSTALLER_LOG_LEVELS
+
 
 def validate_version(version:list) -> bool:
     if len(version) == 0:

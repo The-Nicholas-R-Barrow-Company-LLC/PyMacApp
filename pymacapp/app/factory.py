@@ -1,17 +1,13 @@
-import os, time
+import os
+import time
 from ..pyinstaller import spec
 from ..helpers import MINIMUM_ENTITLEMENTS
-from ..command import cmd
+from ..command import Command
 from ..logger import logger
-from ..entitlements import CONTENTS as ENTITLEMENTS
 
-def check_entitlements():
-    if not os.path.exists(MINIMUM_ENTITLEMENTS):
-        with open(MINIMUM_ENTITLEMENTS, "w") as f:
-            f.writelines(ENTITLEMENTS)
 
 class App:
-    def __init__(self, name:str, identifier:str=None, icon:str=None) -> None:
+    def __init__(self, name: str, identifier: str = None, icon: str = None) -> None:
         """create a new application instance
 
         :param name: the name of your application (i.e. "My New App")
@@ -23,7 +19,8 @@ class App:
         """
         self._name = name
         if self._name[-4:] == ".app":
-            logger.info(f"{name=} should not end in .app; this will be removed automatically ({self._name} -> {self._name[:-4]})")
+            logger.info(
+                f"{name=} should not end in .app; this will be removed automatically ({self._name} -> {self._name[:-4]})")
             self._name = self._name[:-4]
         self._identifier = identifier
         self._icon = None
@@ -41,13 +38,17 @@ class App:
         # check vars
         self._built = False
         self._signed = False
+        # config()
+        self._pyinstaller_log_level: str = None
+        self._entitlements: str = None
         logger.debug(f"{self} created")
-        check_entitlements()
 
     def __repr__(self) -> str:
         return f"App({self._name=})"
 
-    def config(self, main:str, architecture:str="universal2", entitlements:str=MINIMUM_ENTITLEMENTS, specpath:str=os.path.abspath(os.path.dirname(__file__)), log_level:str="WARN", brute:bool=False):
+    def config(self, main: str, architecture: str = "universal2", entitlements: str = MINIMUM_ENTITLEMENTS,
+               specpath: str = os.path.abspath(os.path.dirname(__file__)), log_level: str = "WARN",
+               brute: bool = False):
         """configure the .spec file that pyinstaller uses to build the app
 
         :param main: the main script (main.py, etc.) where you run your application from
@@ -65,19 +66,21 @@ class App:
         :return: self (current app)
         :rtype: App
         """
-        self._spec = spec(name=self._name, 
-                            main_script=main, 
-                            icon=self._icon, 
-                            identifier=self._identifier, 
-                            architecture=architecture, 
-                            entitlements=entitlements, 
-                            specpath=specpath,
-                            log_level=log_level,
-                            brute=False)
+        self._spec = spec(name=self._name,
+                          main_script=main,
+                          icon=self._icon,
+                          identifier=self._identifier,
+                          architecture=architecture,
+                          entitlements=entitlements,
+                          specpath=specpath,
+                          log_level=log_level,
+                          brute=False)
+        self._pyinstaller_log_level: str = log_level
         self._entitlements = entitlements
         return self
 
-    def build(self, dist_path:str=os.path.join(os.getcwd(), "dist"), build_path:str=os.path.join(os.getcwd(), "build")):
+    def build(self, dist_path: str = os.path.join(os.getcwd(), "dist"),
+              build_path: str = os.path.join(os.getcwd(), "build")):
         """build the current application into a {NAME}.app
 
         :param dist_path: where the built distributable should be placed once it is built, defaults to os.path.join(os.getcwd(), "dist")
@@ -108,23 +111,22 @@ class App:
             except:
                 raise RuntimeError(f"failed to create non-existent build_path ('{self._build}')")
 
-        command = f"pyinstaller --noconfirm --distpath '{self._dist}' --workpath '{self._build}' '{self._spec}'"
-        cmd(command)
+        command = f"pyinstaller --noconfirm --log-level {self._pyinstaller_log_level} --distpath '{self._dist}' --workpath '{self._build}' '{self._spec}'"
+        Command.run(command)
         self._built = True
         end = time.time()
-        logger.info(f"(app) build completed in {round(end-start, 2)} second(s)")
+        logger.info(f"(app) build completed in {round(end - start, 2)} second(s)")
         return self
-    
-    def sign(self, hash:str):
+
+    def sign(self, hash: str):
         """sign an application
 
         :param hash: hash of an Application ID (Developer); use pymacapp.helpers.get_first_application_hash() to pull the default (see docs)
         :type hash: str
         :return: self (current app)
         :rtype: App
-        """   
-        check_entitlements()     
-        APP = self._app 
+        """
+        APP = self._app
         __entitlements = ""
         __HASH = hash
         if self._entitlements == None:
@@ -137,10 +139,10 @@ class App:
         if not os.path.exists(APP):
             logger.error(f".app ('{APP}') does not exist; call .build(...) first")
         command = f"codesign --deep --force --timestamp --options runtime --entitlements '{__entitlements}' --sign '{__HASH}' '{APP}'"
-        cmd(command)
+        Command.run(command)
         self._signed = True
         return self
-    
+
     def verify(self):
         """verify the signature on the app by sending output to console, optional / not required (for debug purposes only)
 
@@ -148,8 +150,30 @@ class App:
         :rtype: App
         """
         logger.info("***** begin signature verification *****")
-        cmd(f"codesign --verify --verbose '{self._app}'")
-        cmd(f"codesign -dvvv '{self._app}'")
+        Command.run(f"codesign --verify --verbose '{self._app}'")
+        Command.run(f"codesign -dvvv '{self._app}'")
         logger.info("***** end signature verification *****")
         return self
+
+    @staticmethod
+    def get_first_hash(output: bool = False) -> str:
+        """equivalent to running "security find-identity -p basic -v" in terminal and looking for the hash next to "Developer ID Application"
+
+        :param output: log output and errors from the command to find the application hash, defaults to False
+        :type output: bool, optional
+        :return: the Developer ID Application hash
+        :rtype: str
+        """
+        command = "security find-identity -p basic -v"
+
+        # process = subprocess.Popen(command, stdout=subprocess.PIPE, cwd=os.getcwd())
+        process, output, error = Command.run(command, suppress_log=not output)
+        if not error:
+            lines = output.splitlines()
+            for line in lines:
+                if "Developer ID Application" in str(line):
+                    h = line.split()[1]
+                    return h
+        else:
+            logger.debug(f"an error occurred: {error}")
 

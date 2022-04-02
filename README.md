@@ -5,23 +5,18 @@ This Repo creates a project that you can clone to streamline MacOS python deskto
 
 # Quickstart: Building & Packaging Your App
 ```
-from pymacapp import App, Package
-from pymacapp.helpers import get_first_application_hash, get_first_installer_hash
+from pymacapp.app import App
+from pymacapp.package import Package
 
-# Apple Account Information
-# You can get rid of the input(...) functions and instead enter the strings directly so you do not have to enter them each time.
-APPLE_DEVELOPER_ACCOUNT_EMAIL = input("Apple Developer ID Email (str): ")
-APPLE_DEVELOPER_ACCOUNT_APP_SPECIFIC_PASSWORD = input("Apple Developer ID App-Specific Password (str): ")
 
-app = App("My New App", "com.identifier")
-app.setup("./app/main.py", overwrite=True)
-app.build()
-app.sign(get_first_application_hash())
+APPLE_DEVELOPER_EMAIL = 
+APP_SPECIFIC_PASSWORD = 
 
-package = Package(app, "0.0.1", "com.identifier.pkg")
-package.build(get_first_installer_hash())
-package.sign(get_first_installer_hash())
-package.notorize(APPLE_DEVELOPER_ACCOUNT_EMAIL, APPLE_DEVELOPER_ACCOUNT_APP_SPECIFIC_PASSWORD).wait()
+app = App("My New App")
+app.config("./src/main.py").build().sign(App.get_first_hash())
+
+package = Package(app, identifier="com.nicholasrbarrow.ital.pkg")
+package.build().sign(Package.get_first_hash()).notorize(APPLE_DEVELOPER_EMAIL, APP_SPECIFIC_PASSWORD).wait()
 ```
 ## Currently supports
 This currently supports (and has been tested on) Python 3.9.9 on MacOS 11.6. This tool may work on other systems, but has not been tested.
@@ -67,7 +62,7 @@ choose Apple ID
 - repeating, click the plus in the bottom corner
 - choose "Developer ID Installer"
 ### (2/3) Get Certificates and Add to Project
-#### Note: as of version 1.2.3, you should use ```from pymacapp.helpers import get_first_application_hash, get_first_installer_hash``` to get your hashes in your ```build.py``` script
+#### Note: as of version 2.0.0, you should use ```the App.get_first_hash() and Package.get_first_hash()``` to get your hashes in your ```build.py``` script
 - to manually get hashes, run:
 > ```security find-identity -p basic -v```
 - your output will look like:
@@ -128,5 +123,9 @@ This project began while performing work for Georgetown University's Department 
 ### [1.2.9] 03.27.2022
 - minor bug fixes to new coverage for py-makespec
 ### [1.3.0] 03.28.2022
-- added: ```pymacapp.versioning.VersionLocker```. This feature allows you to set a version (an unlimited-length string of non-negative integers delimited by periods ('.')) and pymacapp will store the version number in a file whenever its ```.lock()``` method is called (this is useful so that you can decide when to lock the version (i.e. do not lock until after the app successfully builds, successfully packages, etc.)). 
-
+- added: ```pymacapp.versioning.VersionLocker```. This feature allows you to set a version (an unlimited-length string of non-negative integers delimited by periods ('.')) and pymacapp will store the version number in a file whenever its ```.lock()``` method is called (this is useful so that you can decide when to lock the version (i.e. do not lock until after the app successfully builds, successfully packages, etc.)).
+### [2.0.1] 04.01.2022
+- reformatted major sections of the code to better structure the project for maintaining into the future
+- completed migration to modern ```subprocess``` utilization
+### [2.0.2] 04.01.2022
+- fixed README to reflect 2.0.1 changes
