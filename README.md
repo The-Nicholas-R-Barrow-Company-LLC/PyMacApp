@@ -133,3 +133,5 @@ This project began while performing work for Georgetown University's Department 
 - fixed a bug where default ```entitlements.plist``` did not package
 ### [2.0.4] 04.03.2022
 - continuing to fix a bug where default ```entitlements.plist``` did not package
+### [2.0.5] 04.03.2022
+- continuing to fix a bug where default ```entitlements.plist``` did not package

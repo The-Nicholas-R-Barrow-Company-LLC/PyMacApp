@@ -66,6 +66,8 @@ class App:
         :return: self (current app)
         :rtype: App
         """
+        if not os.path.exists(MINIMUM_ENTITLEMENTS):
+            write_minimum_entitlements()
         self._spec = spec(name=self._name,
                           main_script=main,
                           icon=self._icon,
