@@ -1,7 +1,7 @@
 import os
 import time
 from ..pyinstaller import spec
-from ..helpers import MINIMUM_ENTITLEMENTS
+from ..helpers import MINIMUM_ENTITLEMENTS, write_minimum_entitlements
 from ..command import Command
 from ..logger import logger
 
@@ -131,6 +131,8 @@ class App:
         __HASH = hash
         if self._entitlements == None:
             logger.info(f"{self._entitlements=}, using default entitlements ({MINIMUM_ENTITLEMENTS=})")
+            if not os.path.exists(MINIMUM_ENTITLEMENTS):
+                write_minimum_entitlements()
             __entitlements = MINIMUM_ENTITLEMENTS
         elif os.path.exists(self._entitlements):
             __entitlements = self._entitlements
