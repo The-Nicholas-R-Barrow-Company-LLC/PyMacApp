@@ -129,3 +129,5 @@ This project began while performing work for Georgetown University's Department 
 - completed migration to modern ```subprocess``` utilization
 ### [2.0.2] 04.01.2022
 - fixed README to reflect 2.0.1 changes
+### [2.0.3] 04.03.2022
+- fixed a bug where default ```entitlements.plist``` did not package
