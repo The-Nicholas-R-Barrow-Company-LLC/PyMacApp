@@ -65,12 +65,17 @@ class Package:
 
         # 1: make sure Scripts are executable: sudo chmod -R +x $SCRIPTS
         scripts = COLLECT_SCRIPTS_HERE
-        PRE = None
-        POST = None
+        if not os.path.exists(scripts):
+            logger.debug(f"scripts directory '{scripts}' does not exist; attempting to create it now")
+            os.mkdir(scripts)
+        logger.debug(f"emptying '{scripts}'")
+        [os.remove(os.path.join(scripts, _)) for _ in os.listdir(scripts)]
+        verified_preinstall_script = None
+        verified_postinstall_script = None
         if preinstall_script:
             if os.path.isfile(preinstall_script):
                 if os.path.basename(preinstall_script) == "preinstall":
-                    PRE = preinstall_script
+                    verified_preinstall_script = preinstall_script
                 else:
                     logger.error(
                         f"the name of the preinstall script must be 'preinstall' exactly, without extension (currently {preinstall_script=})")
@@ -79,28 +84,18 @@ class Package:
         if postinstall_script:
             if os.path.isfile(postinstall_script):
                 if os.path.basename(postinstall_script) == "postinstall":
-                    POST = postinstall_script
+                    verified_postinstall_script = postinstall_script
                 else:
                     logger.error("the name of the postinstall script must be 'postinstall' exactly, without extension")
             else:
                 logger.error(f"unable to verify '{postinstall_script=}'; it will be ignored")
-        if PRE or POST:
-            for file in [f for f in os.listdir(COLLECT_SCRIPTS_HERE) if
-                         os.path.isfile(os.path.join(COLLECT_SCRIPTS_HERE, f))]:
-                if file != "preinstall" and file != "postinstall":
-                    logger.warning(
-                        f"found unknown file '{file}' in Scripts build directory ({COLLECT_SCRIPTS_HERE}); it will be removed")
-                    os.remove(os.path.join(COLLECT_SCRIPTS_HERE, file))
-            if PRE:
-                # this is to preserve the default script
-                if PRE != os.path.join(os.path.dirname(__file__), "Scripts", "preinstall"):
-                    shutil.copyfile(PRE, os.path.join(os.path.dirname(__file__), "Scripts", "preinstall"))
-            if POST:
-                # this is to preserve the default script
-                if POST != os.path.join(os.path.dirname(__file__), "Scripts", "postinstall"):
-                    shutil.copyfile(POST, os.path.join(os.path.dirname(__file__), "Scripts", "postinstall"))
+        if verified_preinstall_script or verified_postinstall_script:
+            if verified_preinstall_script:
+                shutil.copyfile(verified_preinstall_script, os.path.join(scripts, "preinstall"))
+            if verified_postinstall_script:
+                shutil.copyfile(verified_postinstall_script, os.path.join(scripts, "postinstall"))
             logger.info(f"ensuring {scripts=} is executable (sudo chmod -R +x {scripts})")
-            Command.run(f"sudo chmod -R +x {scripts}")
+            Command.run(f"sudo -S chmod -R +x {scripts}")
 
         # 2: productbuild
         build_command = f"pkgbuild"
@@ -110,7 +105,7 @@ class Package:
             build_command = build_command + f" --identifier {self.identifier}"
         else:
             raise RuntimeError(f"cannot package without an identifier; set in the Package's constructor")
-        if PRE or POST:
+        if verified_preinstall_script or verified_postinstall_script:
             build_command = build_command + f" --scripts '{COLLECT_SCRIPTS_HERE}'"
         build_command = build_command + f" --root '{self.app._app}' --install-location '/Applications/{self.app._name}.app' '{os.path.join(self.__build, f'{self.app._name}.pkg')}'"
         Command.run(build_command)

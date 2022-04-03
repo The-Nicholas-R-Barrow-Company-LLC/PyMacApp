@@ -8,7 +8,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 # This call to setup() does all the work
-__version__ = "2.0.5"
+__version__ = "2.0.8"
 
 setup(
     name="PyMacApp",

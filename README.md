@@ -135,3 +135,9 @@ This project began while performing work for Georgetown University's Department 
 - continuing to fix a bug where default ```entitlements.plist``` did not package
 ### [2.0.5] 04.03.2022
 - continuing to fix a bug where default ```entitlements.plist``` did not package
+### [2.0.6] 04.03.2022
+- fixing bug related to Scripts collecting
+### [2.0.7] 04.03.2022
+- fixing bug related to Scripts collecting
+### [2.0.8] 04.03.2022
+- fixing bug related to Scripts being made executable in non-terminal environments (i.e. PyCharm)
