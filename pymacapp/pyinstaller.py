@@ -1,10 +1,12 @@
 from .logger import logger
 from .exceptions import BuildException
-from .validators import validate_app_name, validate_directory, validate_file,  validate_identifier, validate_pyinstaller_architecture, validate_pyinstaller_log_level
+from .validators import validate_app_name, validate_directory, validate_file, validate_identifier, \
+    validate_pyinstaller_architecture, validate_pyinstaller_log_level
 from .helpers import ARCHITECTURES, PYINSTALLER_LOG_LEVELS
 from .command import Command
 import os
 from dataclasses import dataclass
+
 """
 Full list of needed commands (remember to separate with spaces)
 pyi-makespec 
@@ -19,6 +21,8 @@ pyi-makespec
 --log-level {LEVEL: TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL}
 {main.py}
 """
+
+
 @dataclass(frozen=True, repr=True)
 class Data:
     """create an object to add non-python files during the build process. NOTE: if the src and dest should be the same, the included files will need different paths when used in your code.
@@ -28,20 +32,22 @@ class Data:
     :param dest: where to put the src content in the built app-bundle (use '.' for root)
     :type dest: str
     """
-    src:str
-    dest:str
+    src: str
+    dest: str
 
-def spec(name:str, 
-        main_script:str, 
-        icon:str=None, 
-        identifier:str=None, 
-        architecture:str="universal2", 
-        entitlements:str=None, 
-        # hidden_imports:"list[str]"=None,
-        # add_data:"list[Data]"=None,
-        specpath:str=os.path.abspath(os.path.dirname(__file__)),
-        log_level:str = "INFO",
-        brute:bool = False):
+
+def spec(name: str,
+         main_script: str,
+         icon: str = None,
+         identifier: str = None,
+         architecture: str = "universal2",
+         entitlements: str = None,
+         hidden_imports: "list[str]" = None,
+         collect_submodules: "list[str]" = None,
+         # add_data:"list[Data]"=None,
+         specpath: str = os.path.abspath(os.path.dirname(__file__)),
+         log_level: str = "INFO",
+         brute: bool = False):
     command = "pyi-makespec --windowed"
 
     if not validate_app_name(name):
@@ -53,7 +59,7 @@ def spec(name:str,
     else:
         command += f" --name '{name}'"
         logger.debug(f" --name '{name}'")
-    
+
     if not validate_file(main_script, ".py"):
         if not brute:
             raise BuildException(f"unable to validate {main_script=}")
@@ -68,7 +74,7 @@ def spec(name:str,
             else:
                 command += f" --icon '{icon}'"
                 logger.debug(f"adding --icon f'{icon}'")
-    
+
     if identifier:
         if validate_identifier(identifier):
             command += f" --osx-bundle-identifier {identifier}"
@@ -79,13 +85,22 @@ def spec(name:str,
             else:
                 command += f" --osx-bundle-identifier {identifier}"
                 logger.debug(f"adding: --osx-bundle-identifier {identifier}")
-    
+
     if architecture:
         if validate_pyinstaller_architecture(architecture):
             command += f" --target-architecture {architecture}"
             logger.debug(f"adding: --target-architecture {architecture}")
         else:
-            raise BuildException(f"unable to validate {architecture=}; must be one of {ARCHITECTURES} (will not be ignored by brute=True)")
+            raise BuildException(
+                f"unable to validate {architecture=}; must be one of {ARCHITECTURES} (will not be ignored by brute=True)")
+
+    if hidden_imports:
+        for hidden_import in hidden_imports:
+            command += f" --hidden-import {hidden_import}"
+
+    if collect_submodules:
+        for submodule in collect_submodules:
+            command += f" --collect-submodules {submodule}"
 
     if entitlements:
         if validate_file(entitlements, ".plist"):
@@ -114,13 +129,13 @@ def spec(name:str,
             command += f" --log-level {log_level}"
             logger.debug(f"adding: --log-level {log_level}")
         else:
-            raise BuildException(f"unable to validate {log_level=}; must be one of {PYINSTALLER_LOG_LEVELS} (will not be ignored by brute=True)")
+            raise BuildException(
+                f"unable to validate {log_level=}; must be one of {PYINSTALLER_LOG_LEVELS} (will not be ignored by brute=True)")
 
     command += f" '{main_script}'"
 
-    resp:Command = Command.run(command)
+    resp: Command = Command.run(command)
 
     for line in resp.output.splitlines():
         if "Wrote " in line:
             return line[6:-1]
-

@@ -141,3 +141,5 @@ This project began while performing work for Georgetown University's Department 
 - fixing bug related to Scripts collecting
 ### [2.0.8] 04.03.2022
 - fixing bug related to Scripts being made executable in non-terminal environments (i.e. PyCharm)
+### [2.1.0] 04.13.2022
+- adds the ability to use ```--hidden-import MODULENAME``` and ```--collect-submodules MODULENAME``` by passing lists of module names in the ```App.config(...)``` command

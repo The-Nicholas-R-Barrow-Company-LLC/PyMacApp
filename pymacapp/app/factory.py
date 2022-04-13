@@ -47,6 +47,7 @@ class App:
         return f"App({self._name=})"
 
     def config(self, main: str, architecture: str = "universal2", entitlements: str = MINIMUM_ENTITLEMENTS,
+               hidden_imports: "list[str]" = None, collect_submodules: "list[str]" = None,
                specpath: str = os.path.abspath(os.path.dirname(__file__)), log_level: str = "WARN",
                brute: bool = False):
         """configure the .spec file that pyinstaller uses to build the app
@@ -74,6 +75,8 @@ class App:
                           identifier=self._identifier,
                           architecture=architecture,
                           entitlements=entitlements,
+                          hidden_imports=hidden_imports,
+                          collect_submodules=collect_submodules,
                           specpath=specpath,
                           log_level=log_level,
                           brute=False)
