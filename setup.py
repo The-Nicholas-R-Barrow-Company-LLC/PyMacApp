@@ -9,10 +9,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 # This call to setup() does all the work
-__version__ = f"{input('MAJOR: ')}.{input('MINOR: ')}.{input('PATCH: ')}"
-
-if input(f"Version = {__version__} -> Do you want to continue? (y / ): ") != "y":
-    sys.exit()
+__version__ = "3.0.3"
 
 setup(
     name="PyMacApp",

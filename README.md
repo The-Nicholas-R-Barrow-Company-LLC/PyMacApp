@@ -162,3 +162,5 @@ This project began while performing work for Georgetown University's Department 
 - PyMacApp will now require PySide6 to support these new runtools
 ### [3.0.2] 05.14.2022
 - relative import bug fixes
+### [3.0.3] 05.14.2022
+- bug fixes for setup.py
