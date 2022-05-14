@@ -1,9 +1,11 @@
 import os
 import time
+import plistlib
 from ..pyinstaller import spec
 from ..helpers import MINIMUM_ENTITLEMENTS, write_minimum_entitlements
 from ..command import Command
 from ..logger import logger
+import string
 
 
 class App:
@@ -35,6 +37,7 @@ class App:
         self._build = None
         self._dist = None
         self._app = None
+        self._url_schema = None
         # check vars
         self._built = False
         self._signed = False
@@ -49,7 +52,7 @@ class App:
     def config(self, main: str, architecture: str = "universal2", entitlements: str = MINIMUM_ENTITLEMENTS,
                hidden_imports: "list[str]" = None, collect_submodules: "list[str]" = None,
                specpath: str = os.path.abspath(os.path.dirname(__file__)), log_level: str = "WARN",
-               brute: bool = False):
+               brute: bool = False, url_schema: str = None):
         """configure the .spec file that pyinstaller uses to build the app
 
         :param main: the main script (main.py, etc.) where you run your application from
@@ -64,6 +67,8 @@ class App:
         :type log_level: str, optional
         :param brute: override built-in checks by pymacapp, defaults to False
         :type brute: bool, optional
+        :param url_schema: the prefix for a custom url schema; defaults to None (no schema)
+        :type url_schema: str, optional
         :return: self (current app)
         :rtype: App
         """
@@ -82,6 +87,11 @@ class App:
                           brute=False)
         self._pyinstaller_log_level: str = log_level
         self._entitlements = entitlements
+
+        # TODO: add handling for info.plist to be added after the spec is built; CANNOT execute until it is built (inside this function)
+        if url_schema:
+            self._url_schema = url_schema
+            logger.debug(f"as of v.2.2.3, the url schema is added after the package is built and before it is signed")
         return self
 
     def build(self, dist_path: str = os.path.join(os.getcwd(), "dist"),
@@ -118,6 +128,25 @@ class App:
 
         command = f"pyinstaller --noconfirm --log-level {self._pyinstaller_log_level} --distpath '{self._dist}' --workpath '{self._build}' '{self._spec}'"
         Command.run(command)
+
+        if self._url_schema:
+            logger.debug(f"attempting to add custom schema {self._url_schema} to info.plist")
+            pl_file = os.path.join(self._app, "Contents", "Info.plist")
+            pl = None
+            with open(pl_file, 'rb') as fp:
+                pl = plistlib.load(fp)
+            os.remove(pl_file)
+            logger.debug(pl)
+            pl['CFBundleURLTypes'] = [{
+                'CFBundleURLName': self._identifier,
+                'CFBundleURLSchemes': [f"{self._url_schema}"]
+            }]
+            logger.debug(pl)
+            with open(pl_file, 'w') as fp:
+                pass
+            with open(pl_file, 'wb') as fp:
+                plistlib.dump(pl, fp)
+
         self._built = True
         end = time.time()
         logger.info(f"(app) build completed in {round(end - start, 2)} second(s)")

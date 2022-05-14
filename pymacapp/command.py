@@ -4,7 +4,11 @@ from subprocess import CompletedProcess
 from .logger import logger
 
 class Command:
-    def __init__(self, process:CompletedProcess) -> None:
+    def __init__(self, process: CompletedProcess) -> None:
+        """
+        Command should never be initialized using Command(...); instead, always use classmethod Command.run(...)
+        :param process: a completed process
+        """
         self.process = process
         self.output = self.process.stdout
         self.error = self.process.stderr

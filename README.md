@@ -3,10 +3,10 @@
 
 This Repo creates a project that you can clone to streamline MacOS python desktop app development. It contains all necessary scripts to build your final project, as well as code-sign them from Apple (Developer Account required for some features).
 
-# Quickstart: Building & Packaging Your App
+# Quickstart: Building & Packaging Your App (last updated in v.3.0.1)
 ```
-from pymacapp.app import App
-from pymacapp.package import Package
+from pymacapp.buildtools.app import App
+from pymacapp.buildtools.package import Package
 
 
 APPLE_DEVELOPER_EMAIL = 
@@ -22,7 +22,8 @@ package.build().sign(Package.get_first_hash()).notorize(APPLE_DEVELOPER_EMAIL, A
 This currently supports (and has been tested on) Python 3.9.9 on MacOS 11.6. This tool may work on other systems, but has not been tested.
 Feature (release phase):
 - Building .app files (beta)
-- Adding custom files/resources to app files (alpha)
+  - ~~Adding custom files/resources to app files (alpha)~~ [removed]
+  - Custom URI Scheme & QApplication Class w/ Event Handler (alpha)
 - Signing .app files (beta)
 - Building .pkg files (beta)
 - Signing .pkg files (alpha)
@@ -143,3 +144,19 @@ This project began while performing work for Georgetown University's Department 
 - fixing bug related to Scripts being made executable in non-terminal environments (i.e. PyCharm)
 ### [2.1.0] 04.13.2022
 - adds the ability to use ```--hidden-import MODULENAME``` and ```--collect-submodules MODULENAME``` by passing lists of module names in the ```App.config(...)``` command
+### [2.2.0] 05.13.2022
+- adds the (alpha) ability to define a custom schema (```myappschema://...```) to access/launch the app from a web browser; define in the ```app.config(..., url_schema="...")```
+### [2.2.1] 05.13.2022
+- bug fixes for v.2.2.0
+### [2.2.2] 05.13.2022
+- bug fixes for v.2.2.1 that caused a faulty specpath
+### [2.2.3] 05.14.2022
+- bug fixes for v.2.2.2 that caused a faulty specpath by moving the custom url_schema to a plist modification post-build instead of modifying the spec file pre-build
+### [2.2.4] 05.14.2022
+- bug fixes for v.2.2.3
+### [3.0.1] 05.14.2022
+- major restructuring for the future of PyMacApp, now to include (a) buildtools and (b) runtools
+  - ```pymacapp.buildtools``` contains, at this point, ```app``` and ```package``` which are designed to aid in the creation of building, signing, and notorizing ```.app``` and ```.pkg``` files
+  - ```pymacaoo.runtools``` is intended to contain tools for use in coding python applications
+    - introduces CustomURIApplication, a subclass of QApplication for PySide6 to handle Custom URIs, pairing with ```url_schema``` in ```App.build``` (```from pymacapp.runtools import CustomURIApplication```)
+- PyMacApp will now require PySide6 to support these new runtools

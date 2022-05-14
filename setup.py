@@ -8,7 +8,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 # This call to setup() does all the work
-__version__ = "2.1.0"
+__version__ = "3.0.1"
 
 setup(
     name="PyMacApp",
@@ -25,10 +25,10 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.9",
     ],
-    packages=["pymacapp", "pymacapp.app", "pymacapp.package"],
+    packages=["pymacapp", "pymacapp.runtools", "pymacapp.buildtools", "pymacapp.buildtools.app", "pymacapp.buildtools.package"],
     package_data={'pymacapp': ['entitlements.plist']},
     include_package_data=True,
-    install_requires=["PyInstaller"],
+    install_requires=["PyInstaller","PySide6"],
     project_urls={
         'Source': 'https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp',
         'Tracker': 'https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp/issues',
