@@ -160,3 +160,5 @@ This project began while performing work for Georgetown University's Department 
   - ```pymacaoo.runtools``` is intended to contain tools for use in coding python applications
     - introduces CustomURIApplication, a subclass of QApplication for PySide6 to handle Custom URIs, pairing with ```url_schema``` in ```App.build``` (```from pymacapp.runtools import CustomURIApplication```)
 - PyMacApp will now require PySide6 to support these new runtools
+### [3.0.2] 05.14.2022
+- relative import bug fixes

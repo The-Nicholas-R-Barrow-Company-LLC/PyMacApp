@@ -1,7 +1,7 @@
 from ..app import App
-from ..logger import logger
-from ..helpers import COLLECT_SCRIPTS_HERE
-from ..command import Command
+from ...logger import logger
+from ...helpers import COLLECT_SCRIPTS_HERE
+from ...command import Command
 import time
 import shutil
 import os

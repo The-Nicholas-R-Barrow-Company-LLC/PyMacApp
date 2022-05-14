@@ -1,5 +1,6 @@
 import pathlib
 from setuptools import setup
+import sys
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
@@ -8,7 +9,10 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 # This call to setup() does all the work
-__version__ = "3.0.1"
+__version__ = f"{input('MAJOR: ')}.{input('MINOR: ')}.{input('PATCH: ')}"
+
+if input(f"Version = {__version__} -> Do you want to continue? (y / ): ") != "y":
+    sys.exit()
 
 setup(
     name="PyMacApp",

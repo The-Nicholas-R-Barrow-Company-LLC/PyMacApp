@@ -1,10 +1,10 @@
 import os
 import time
 import plistlib
-from ..pyinstaller import spec
-from ..helpers import MINIMUM_ENTITLEMENTS, write_minimum_entitlements
-from ..command import Command
-from ..logger import logger
+from ...pyinstaller import spec
+from ...helpers import MINIMUM_ENTITLEMENTS, write_minimum_entitlements
+from ...command import Command
+from ...logger import logger
 import string
 
 
