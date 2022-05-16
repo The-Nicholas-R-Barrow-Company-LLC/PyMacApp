@@ -164,3 +164,5 @@ This project began while performing work for Georgetown University's Department 
 - relative import bug fixes
 ### [3.0.3] 05.14.2022
 - bug fixes for setup.py
+### [3.1.0] 05.16.2022
+- adds the ability to set your own .spec file: ```App.config(use_custom_spec='/path/to/file.spec')```
