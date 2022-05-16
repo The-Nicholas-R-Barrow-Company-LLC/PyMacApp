@@ -166,3 +166,5 @@ This project began while performing work for Georgetown University's Department 
 - bug fixes for setup.py
 ### [3.1.0] 05.16.2022
 - adds the ability to set your own .spec file: ```App.config(use_custom_spec='/path/to/file.spec')```
+### [3.1.1] 05.16.2022
+- adds a URIRouter (```https://github.com/The-Nicholas-R-Barrow-Company-LLC/uri-router``` or ```pip3 install URIRouter```) to ```pymacapp.runtools.CustomURIApplication```

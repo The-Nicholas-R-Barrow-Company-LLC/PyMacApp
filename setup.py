@@ -9,7 +9,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 # This call to setup() does all the work
-__version__ = "3.1.0"
+__version__ = "3.1.1"
 
 setup(
     name="PyMacApp",
@@ -29,7 +29,7 @@ setup(
     packages=["pymacapp", "pymacapp.runtools", "pymacapp.buildtools", "pymacapp.buildtools.app", "pymacapp.buildtools.package"],
     package_data={'pymacapp': ['entitlements.plist']},
     include_package_data=True,
-    install_requires=["PyInstaller","PySide6"],
+    install_requires=["PyInstaller","PySide6","urirouter"],
     project_urls={
         'Source': 'https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp',
         'Tracker': 'https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp/issues',
