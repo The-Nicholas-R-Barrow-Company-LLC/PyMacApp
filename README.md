@@ -172,3 +172,5 @@ This project began while performing work for Georgetown University's Department 
 - adds the ability to register the .app as having the ability to open extensions (.pdf, .docx, .txt, et cetera)
 ### [3.2.1] 06.13.2022
 - v.3.2.0 bug fixes
+### [3.2.2] 06.13.2022
+- v.3.2.1 bug fixes

@@ -81,11 +81,16 @@ class UTIExtension:
         pl['CFBundleDocumentTypes'] = []
         for ext in extensions:
             logger.debug(f"attempting to add document type '{ext}' to info.plist")
+            try:
+                file_ext = str(ext).split(".")[-1:][0]
+            except Exception as e:
+                file_ext = str(ext)
             pl['CFBundleDocumentTypes'].append({
                 'CFBundleTypeName': f"{str(ext)}",
                 'CFBundleTypeRole': ext.role,
                 'LSHandlerRank': ext.rank,
-                'LSItemContentTypes': str(ext)
+                'LSItemContentTypes': [str(ext)],
+                'CFBundleTypeExtensions': [file_ext]
             })
 
         # save data
