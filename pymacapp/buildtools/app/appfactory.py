@@ -5,6 +5,7 @@ from ...pyinstaller import spec
 from ...helpers import MINIMUM_ENTITLEMENTS, write_minimum_entitlements
 from ...command import Command
 from ...logger import logger
+from ._custom_extensions import UTIExtension
 import string
 
 
@@ -44,6 +45,7 @@ class App:
         # config()
         self._pyinstaller_log_level: str = None
         self._entitlements: str = None
+        self._extensions: "list[UTIExtension]" = None
         logger.debug(f"{self} created")
 
     def __repr__(self) -> str:
@@ -52,9 +54,13 @@ class App:
     def config(self, main: str, architecture: str = "universal2", entitlements: str = MINIMUM_ENTITLEMENTS,
                hidden_imports: "list[str]" = None, collect_submodules: "list[str]" = None,
                specpath: str = os.path.abspath(os.path.dirname(__file__)), log_level: str = "WARN",
-               brute: bool = False, url_schema: str = None, use_custom_spec: str = None):
+               brute: bool = False, url_schema: str = None, use_custom_spec: str = None, handles_extensions: "list[UTIExtension]" = None):
         """configure the .spec file that pyinstaller uses to build the app
 
+        :param collect_submodules: list of names of submodules to collect
+        :param hidden_imports: list of names of hidden modules to collect
+        :param use_custom_spec: filepath; override the spec used to build with a custom one
+        :param handles_extensions: list of UTIExtensions to register the app as able to open
         :param main: the main script (main.py, etc.) where you run your application from
         :type main: str
         :param architecture: the arhitecture to build your app for, defaults to "universal2"
@@ -97,6 +103,8 @@ class App:
         if url_schema:
             self._url_schema = url_schema
             logger.debug(f"as of v.2.2.3, the url schema is added after the package is built and before it is signed")
+        if handles_extensions:
+            self._extensions = handles_extensions
         return self
 
     def build(self, dist_path: str = os.path.join(os.getcwd(), "dist"),
@@ -151,6 +159,11 @@ class App:
                 pass
             with open(pl_file, 'wb') as fp:
                 plistlib.dump(pl, fp)
+
+        if self._extensions:
+            logger.debug(f"attempting to register custom extension handling to Info.plist")
+            pl_file = os.path.join(self._app, "Contents", "Info.plist")
+            UTIExtension.add_custom_doc_types(pl_file, self._extensions)
 
         self._built = True
         end = time.time()
