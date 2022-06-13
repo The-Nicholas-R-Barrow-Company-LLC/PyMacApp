@@ -43,7 +43,7 @@ class UTIExtension:
         return self.ext
 
     @staticmethod
-    def find_local(search: str) -> list[str]:
+    def find_local(search: str) -> "list[str]":
         """
         Search the local machine for all registered UTIs containing 'search'
         :param search: the (sub)string to search for

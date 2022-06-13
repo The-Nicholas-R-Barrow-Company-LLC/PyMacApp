@@ -1,1 +1,1 @@
-from .appfactory import App
+from .appfactory import App, UTIExtension
