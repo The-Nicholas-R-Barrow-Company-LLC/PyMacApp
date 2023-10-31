@@ -154,8 +154,8 @@ collaboration.
 - `Package.notorize` method has been renamed to `Package.notarize` to fix this embarrassing typo
 - removed `Package.wait` method in favor of `Package.notarize(wait: bool)`
 - Implicit authorization during `Package.notarize`, et al., removed in favor of an explicit call of the `Package.login`
-  method (see the Quickstart above for demo auth flow)
-- added an example `build-example.py` and example application under the `example` folder in the project root
+  method (see the [Quickstart](https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp/blob/main/README.md#quickstart-building--packaging-your-app-last-updated-in-v401) for demo auth flow)
+- added an example [build-example.py](https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp/blob/main/example/build-example.py) and example application under the [example](https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp/tree/main/example) folder in the project root
 
 ---
 
