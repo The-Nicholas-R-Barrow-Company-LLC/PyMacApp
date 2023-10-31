@@ -6,7 +6,7 @@ This Repo creates a project that you can clone to streamline MacOS python deskto
 necessary scripts to build your final project, as well as code-sign them from Apple (Developer Account required for some
 features).
 
-# Quickstart: Building & Packaging Your App (last updated in v.3.0.1)
+# Quickstart: Building & Packaging Your App (last updated in v.4.0.1)
 
 ```python
 from pymacapp.buildtools.app import App
