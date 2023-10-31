@@ -14,6 +14,9 @@ class Package:
         self.version = version
         self.__build = None
         self.__dist = None
+        self.__developer_id: str = None
+        self.__developer_team_id: str = None
+        self.__developer_app_specific_password: str = None
         logger.debug(f"{self} created")
         if not os.path.exists(self.app._app):
             logger.error(f"app build ('{self.app._app}') does not exist")
@@ -26,6 +29,10 @@ class Package:
 
     def __repr__(self) -> str:
         return f"Package({self.app=})"
+
+    @property
+    def is_logged_in(self):
+        return self.__developer_id and self.__developer_app_specific_password and self.__developer_team_id
 
     def build(self, preinstall_script: str = None, postinstall_script: str = None,
               dist_path: str = os.path.join(os.getcwd(), "dist"), build_path: str = os.path.join(os.getcwd(), "build")):
@@ -149,104 +156,72 @@ class Package:
         else:
             logger.debug(f"an error occurred: {error}")
 
-    def login(self, apple_id: str = None, app_specific_password: str = None):
-        """helper function used by .notorize(...), .wait(...), and .staple(...)
+    def login(self, apple_id: str, app_specific_password: str, team_id: str):
+        """enter your login credentials
 
         :param apple_id: email of an Apple developer account, defaults to None
         :type apple_id: str, optional
         :param app_specific_password: app-specific password associated with an apple developer account, defaults to None
         :type app_specific_password: str, optional
+        :param team_id: Apple Developer Team ID, found at https://developer.apple.com/account#MembershipDetailsCard
+        :type team_id: str, optional
         """
-        if not hasattr(self, "_apple_id"):
-            if apple_id == None:
-                apple_id = input("apple developer id email (str): ")
-            self._apple_id = apple_id
-        if not hasattr(self, "_app_specific_password"):
-            if app_specific_password == None:
-                app_specific_password = input("app-specific password (str): ")
-            self._app_specific_password = app_specific_password
+        if apple_id is None:
+            apple_id = input("apple developer id email (str): ")
+        self.__developer_id = apple_id
 
-    def notorize(self, apple_id: str = None, app_specific_password: str = None):
-        """notorize the current package through Apple's notary service (requires .wait(...) or .staple(...), .wait(...) is reccomended)
+        if app_specific_password is None:
+            app_specific_password = input("app-specific password (str): ")
+        self.__developer_app_specific_password = app_specific_password
 
-        :param apple_id: email of an apple developer account, defaults to None
-        :type apple_id: str, optional
-        :param app_specific_password: app-specific password associated with an apple developer account, defaults to None
-        :type app_specific_password: str, optional
-        :return: self (current package)
-        :rtype: Package
-        """
+        if team_id is None:
+            team_id = input("apple developer team id (str): ")
+        self.__developer_team_id = team_id
+
+    def _check_login(self):
+        if not self.is_logged_in:
+            logger.warning(
+                "pymacapp is not logged in to your Apple Developer account; call the .login(...) method first!")
+            if input("Are you sure you want to continue (y): ") != "y":
+                raise KeyboardInterrupt()
+
+    def notarize(self, wait: bool = True):
+        """notarize the current package through Apple's notary service (ensure you call .login(...) first)"""
+
         if not self.app._signed:
             logger.warning(
                 f"pymacapp does not indicate that your app {self.app} was signed; notary service may fail if the .app is not signed (you should call .sign(...) on your App instance)")
             if input("Are you sure you want to continue (y): ") != "y":
                 raise KeyboardInterrupt()
-        self.login(apple_id=apple_id, app_specific_password=app_specific_password)
-        command = f"""xcrun altool --notarize-app --primary-bundle-id {self.identifier} --username={apple_id} --password {app_specific_password} --file '{os.path.join(self.__dist, f"{self.app._name}.pkg")}'"""
+
+        self._check_login()
+
+        command = f"""xcrun notarytool submit --apple-id={self.__developer_id} --password {self.__developer_app_specific_password} --team-id {self.__developer_team_id} '{os.path.join(self.__dist, f"{self.app._name}.pkg")}'"""
+        if(wait):
+            command = command + " --wait"
+
         logger.debug(f"signing with: {command}")
-        logger.info("attempting to notorize")
+        logger.info("attempting to notarize")
+        if(wait):
+            logger.warn("waiting for notarization to complete, this may take some time; call .notarize(wait=False) if you do not want this behavior (NOT RECCOMENDED)")
         process = Command.run(command)
         output, error = process.output, process.error
         if output:
             for line in output.splitlines():
-                if "RequestUUID" in line:
-                    self._request_uuid = line.split(" = ")[1]
-                    logger.info(f"uploaded to notary service (uuid={self._request_uuid})")
-        # check status: xcrun altool --notarization-history 0 -u "USERNAME" -p "PASSWORD"
-        # if it fails: xcrun altool --username "nrb@nicholasrbarrow.com" --password "@keychain:Developer-altool" --notarization-info "Your-Request-UUID"
+                if "  id:" in line:
+                    self.__request_uuid = line.split(": ")[1]
+                    logger.info(f"uploaded to notary service (uuid={self.__request_uuid})")
+                    break
         return self
 
-    def wait(self, apple_id: str = None, app_specific_password: str = None):
-        """wait for a response from Apple's notary service and then handle response
-
-        :param apple_id: email of an apple developer account, defaults to None
-        :type apple_id: str, optional
-        :param app_specific_password: app-specific password associated with an apple developer account, defaults to None
-        :type app_specific_password: str, optional
-        """
-        self.login(apple_id=apple_id, app_specific_password=app_specific_password)
-        try:
-            if self._request_uuid:
-                check_again = True
-                while check_again:
-                    command = f"xcrun altool --username {self._apple_id} --password {self._app_specific_password} --notarization-info {self._request_uuid}"
-                    process = Command.run(command)
-                    output, error = process.output, process.error
-                    if output:
-                        for line in output.splitlines():
-                            logger.info(line)
-                            if "Status Message: Package Invalid" in line:
-                                check_again = False
-                                logger.error(f"unable to notorize (invalid package for uuid={self._request_uuid})")
-                                logger.info(f"waiting 20 seconds and then pulling debug log")
-                                time.sleep(20)
-                                self.log_full_notary_log()
-                            elif "Status Message: Package Approved" in line:
-                                check_again = False
-                                logger.info("successful notorization; automatically attempting to staple")
-                                self.staple()
-                    if error:
-                        for err in error.splitlines():
-                            logger.error(err)
-                    time.sleep(5)
-        except AttributeError:
-            logger.error(f"self._request_uuid does not exist; call .notorize(...) first")
-
-    def log_full_notary_log(self, apple_id: str = None, app_specific_password: str = None):
-        """logs full notary output (called when notarization fails, used to get log from notary)
-
-        :param apple_id: email of an apple developer account, defaults to None
-        :type apple_id: str, optional
-        :param app_specific_password: app-specific password associated with an apple developer account, defaults to None
-        :type app_specific_password: str, optional
-        """
-        self.login(apple_id=apple_id, app_specific_password=app_specific_password)
-        command = f"xcrun altool --username {self._apple_id} --password {self._app_specific_password} --notarization-info {self._request_uuid}"
+    def log_full_notary_log(self):
+        """logs full notary output (called when notarization fails, used to get log from notary)"""
+        self._check_login()
+        command = f"xcrun notarytool log --apple-id={self.__developer_id} --password {self.__developer_app_specific_password} --team-id {self.__developer_team_id} {self.__request_uuid}"
         Command.run(command)
 
     def staple(self):
-        """staple a package that has been notorized successfully, called automatically if .wait() is used after .notorize()
-        """
+        """staple a package that has been notarized successfully, called automatically if .wait() is used after .notorize()"""
         logger.info("preparing to staple")
         package = os.path.join(self.__dist, f"{self.app._name}.pkg")
         command = f"xcrun stapler staple '{package}'"

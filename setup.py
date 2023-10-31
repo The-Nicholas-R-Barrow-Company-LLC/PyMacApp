@@ -14,7 +14,7 @@ __version__ = "3.2.2"
 setup(
     name="PyMacApp",
     version=__version__,
-    description="Basic Tools to Build, Package, Sign, and Notorize Python Apps for MacOS",
+    description="Basic Tools to Build, Package, Sign, and Notarize Python Apps for MacOS",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/The-Nicholas-R-Barrow-Company-LLC/PyMacApp",
